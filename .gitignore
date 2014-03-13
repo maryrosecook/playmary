@@ -1,0 +1,10 @@
+pom.xml
+musicbox.js
+*jar
+/lib/
+/classes/
+/out/
+/target/
+.lein-deps-sum
+.lein-repl-history
+.lein-plugins/

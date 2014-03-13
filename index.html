@@ -1,0 +1,33 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+
+		<link rel="stylesheet" type="text/css" href="out/css/main.css" />
+    <script src="out/goog/base.js" type="text/javascript"></script>
+    <script src="out/timbre/timbre.js" type="text/javascript"></script>
+  </head>
+
+  <body>
+    <canvas id="canvas"></canvas>
+
+    <!-- stop scrolling -->
+    <script type="text/javascript">
+      document.ontouchmove = function(event){
+        event.preventDefault();
+      }
+    </script>
+
+    <!-- prep mobile webaudio on first user touch -->
+    <script type="text/javascript">
+      document.ontouchstart = document.onclick = function() {
+        T('sin').play().pause();
+        document.ontouchstart = document.onclick = undefined;
+      };
+    </script>
+
+    <script src="musicbox.js" type="text/javascript"></script>
+    <script type="text/javascript">goog.require("musicbox.util");</script>
+    <script type="text/javascript">goog.require("musicbox.one");</script>
+  </body>
+</html>
