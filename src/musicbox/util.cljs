@@ -1,4 +1,4 @@
-(ns music.util
+(ns musicbox.util
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [goog.dom :as dom]
             [goog.events :as events]
