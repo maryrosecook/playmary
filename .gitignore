@@ -3,7 +3,9 @@ musicbox.js
 *jar
 /lib/
 /classes/
-/out/
+/out/cljs/
+/out/goog/
+/out/musicbox/
 /target/
 .lein-deps-sum
 .lein-repl-history
