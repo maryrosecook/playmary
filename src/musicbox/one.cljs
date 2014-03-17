@@ -31,61 +31,85 @@
                (nth colors (mod n (count colors))))))
       (.fillRect draw-ctx (* n note-width) 0 note-width h))))
 
-(defn create-synth
-  []
-  (.play (timbre "OscGen" (js-obj "wave" "fami" "mul" 0.3 "poly" 8))))
-  ;; (timbre "*"
-  ;;         (timbre "+"
-  ;;                 (timbre "sin" freq)
-  ;;                 (timbre "sin" (* freq 2) 0.5)
-  ;;                 (timbre "sin" (* freq 4) 0.25)
-  ;;                 (timbre "sin" (* freq 5) 0.125))
-  ;;         (timbre "adsr" "24db" 5 1000 0.0 2500)))
+(defn create-note-synth
+  [freq]
+  (timbre "adsr"
+          (js-obj "a" 5 "d" 10000 "s" 0 "r" 500)
+          (timbre "fami" (js-obj "freq" freq "mul" 0.5))))
 
-(defn play-note [synth note]
-  (.noteOnWithFreq synth (:freq note) 64))
-
-
-;; (defn synth-play
-;;   [synth note]
-;;   (util/dirr synth)
-;;   (.bang synth))
-
-;; (defn synth-stop
-;;   [synth note]
-;;   (.keyoff synth (get (.-args synth) 1)))
+(defn create-instrument
+  [scale]
+  {:notes (apply sorted-map
+                 (flatten (map vector
+                               scale
+                               (map (fn [x] {:synth (create-note-synth x) :touch-id nil})
+                                    scale))))
+   :w 0
+   :h 0})
 
 (defn audio-time []
   (.-currentTime js/audioCtx))
 
-(defn touch-to-notes [touch interface]
-  (let [touches (js->clj (.-touches (.-event_ touch)))]
-    (map (fn [x]
-           {:time (audio-time)
-            :freq (scales/quantize (get x "clientX")
-                                   0 (:w interface)
-                                   (:scale interface))})
+(defn touch-data->touches [touch-data]
+  (let [event (.-event_ touch-data)
+        touches (js->clj (.-changedTouches event))]
+    (map (fn [x] {:type (.-type event)
+                  :touch-id (get x "identifier")
+                  :clientX (get x "clientX")})
          (for [x (range (get touches "length"))] (get touches (str x))))))
 
-(defn update-size [interface canvas-id]
+
+(defn touch->freq
+  [instrument touch]
+  (scales/quantize (get touch :clientX)
+                   0
+                   (:w instrument)
+                   (keys (:notes instrument))))
+
+(def instrument-fns
+  {"touchstart" (fn
+                  [instrument {touch-id :touch-id :as event}]
+                  (let [freq (touch->freq instrument event)
+                        note (get (:notes instrument) freq)]
+                    (if (not (:touch-id note))
+                      (do
+                        (.play (.bang (:synth note)))
+                        (assoc-in instrument [:notes freq :touch-id] touch-id)))))
+   "touchend" (fn
+                [{notes :notes :as instrument} {touch-id :touch-id :as event}]
+                (if-let [freq (first (filter (fn [x] (= touch-id (:touch-id (get notes x))))
+                                             (keys notes)))]
+                    (do
+                      (.release (:synth (get notes freq)))
+                      (assoc-in instrument [:notes freq :touch-id] nil))))})
+
+(defn fire-event-on-instrument
+  [instrument event]
+  (let [f-instrument (get instrument-fns (:type event))]
+    (or (and f-instrument (f-instrument instrument event))
+        instrument)))
+
+(defn update-size [instrument canvas-id]
   (let [{w :w h :h :as dimensions} (util/get-window-size)]
-    (if (or (not= w (:w interface) (not= h (:h interface))))
+    (if (or (not= w (:w instrument) (not= h (:h instrument))))
       (do (util/set-canvas-size! canvas-id w h)
-          (assoc (assoc interface :h h) :w w))
-      interface)))
+          (assoc (assoc instrument :h h) :w w))
+      instrument)))
 
 (let [canvas-id "canvas"
       draw-ctx (util/get-ctx canvas-id)
-      interface (update-size {:scale (scales/c-minor)} canvas-id)
-      c-touch (merge [(util/listen (dom/getElement canvas-id) :touchstart)])]
-
+      instrument (update-size (create-instrument (scales/c-minor)) canvas-id)
+      c-touch-start (util/listen (dom/getElement canvas-id) :touchstart)
+      c-touch-end (util/listen (dom/getElement canvas-id) :touchend)]
+  (util/dirr (get (:notes instrument) (nth (keys (:notes instrument)) 0)))
   (go
-   (<! c-touch) ;; do not start until get first touch, otherwise will break sound
-   (let [synth (create-synth)]
-     (loop [notes []
-            interface interface]
-       (draw draw-ctx interface notes)
-       (let [new-notes (touch-to-notes (<! c-touch) interface)]
-         (dorun (map (partial play-note synth) new-notes))
-         (recur (concat notes new-notes) (update-size interface canvas-id))))))
+   (<! c-touch-start) (<! c-touch-end) ;; do not start until get first touch, otherwise will break sound
+
+   (loop [instrument instrument]
+     (draw draw-ctx instrument)
+     (let [[touch-data c] (alts! [c-touch-start c-touch-end])
+           touches (touch-data->touches touch-data)]
+
+       (recur (update-size (reduce fire-event-on-instrument instrument touches)
+                           canvas-id)))))
   )
