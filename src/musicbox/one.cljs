@@ -101,7 +101,6 @@
       instrument (update-size (create-instrument (scales/c-minor)) canvas-id)
       c-touch-start (util/listen (dom/getElement canvas-id) :touchstart)
       c-touch-end (util/listen (dom/getElement canvas-id) :touchend)]
-  (util/dirr (get (:notes instrument) (nth (keys (:notes instrument)) 0)))
   (go
    (<! c-touch-start) (<! c-touch-end) ;; do not start until get first touch, otherwise will break sound
 
