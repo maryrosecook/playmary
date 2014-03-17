@@ -8,15 +8,27 @@
 
 (def timbre js/T)
 
-(def colors ["6DA0CB" "A76AB9" "BB67A2" "C55D83" "D35E4C" "E18C43" "E1B040"])
+(def colors [{:light "6DA0CB" :dark "314B61"}
+             {:light "A76AB9" :dark "4F2F59"}
+             {:light "BB67A2" :dark "5E3152"}
+             {:light "C55D83" :dark "692F44"}
+             {:light "D35E4C" :dark "692B22"}
+             {:light "E18C43" :dark "6B401C"}
+             {:light "E1B040" :dark "69511A"}])
 
-(defn draw [draw-ctx interface notes]
-  (let [{w :w h :h} interface
-        note-count (count (:scale interface))
+;; later: use pagehide to cancel in-progress presses when leaving tab
+
+(defn draw [draw-ctx instrument]
+  (let [{w :w h :h} instrument
+        freqs (keys (:notes instrument))
+        note-count (count freqs)
         note-width (/ w note-count)]
     (.clearRect draw-ctx 0 0 w h)
     (dotimes [n note-count]
-      (set! (.-fillStyle draw-ctx) (nth colors (mod n (count colors))))
+      (let [note-on (:touch-id (get (:notes instrument) (nth freqs n)))]
+        (set! (.-fillStyle draw-ctx)
+              ((if note-on :dark :light)
+               (nth colors (mod n (count colors))))))
       (.fillRect draw-ctx (* n note-width) 0 note-width h))))
 
 (defn create-synth
