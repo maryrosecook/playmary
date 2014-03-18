@@ -107,7 +107,7 @@
 
    (loop [instrument instrument]
      (draw draw-ctx instrument)
-     (let [[touch-data c] (alts! [c-touch-start c-touch-end])
+     (let [[touch-data _] (alts! [c-touch-start c-touch-end])
            touches (touch-data->touches touch-data)]
 
        (recur (update-size (reduce fire-event-on-instrument instrument touches)
