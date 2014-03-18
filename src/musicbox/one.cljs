@@ -35,7 +35,7 @@
   [freq]
   (timbre "adsr"
           (js-obj "a" 5 "d" 10000 "s" 0 "r" 500)
-          (timbre "fami" (js-obj "freq" freq "mul" 0.5))))
+          (timbre "fami" (js-obj "freq" freq "mul" 0.1))))
 
 (defn create-instrument
   [scale]
