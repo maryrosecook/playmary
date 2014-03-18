@@ -16,7 +16,6 @@
              {:light "#E18C43" :dark "#6B401C"}
              {:light "#E1B040" :dark "#69511A"}])
 
-;; later: use pagehide to cancel in-progress presses when leaving tab
 
 (defn draw [draw-ctx instrument]
   (let [{w :w h :h} instrument
