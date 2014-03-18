@@ -18,6 +18,17 @@
 
 
 (defn draw [draw-ctx instrument]
+(defn draw-start-screen [draw-ctx]
+  (let [{w-window :w h-window :h} (util/get-window-size)
+        w-text 200
+        h-text 70
+        text "Tap the screen to start"
+        center-dimension (fn [window text] (- (/ window 2) (/ text 2)))]
+    (set! (.-font draw-ctx) "20px Verdana")
+    (.fillText draw-ctx
+               text
+               (center-dimension w-window w-text)
+               (center-dimension h-window h-text))))
   (let [{w :w h :h} instrument
         freqs (keys (:notes instrument))
         note-count (count freqs)
