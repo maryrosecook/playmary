@@ -1,8 +1,8 @@
 (ns musicbox.scales)
 
-(def note-freqs {:c4 261.6})
-(def key' {:major [true false true true false true false true true false true false]
-           :minor [true false true false true true false true false true false true]})
+(def note-freqs {:c3 130.81 :c4 261.6})
+(def key' {:major [true false true false true true false true false true false true]
+          :minor [true false true true false true false true true false true false]})
 
 
 (defn chromatic
@@ -22,8 +22,8 @@
 
 (defn c-minor
   []
-  (let [all-notes (chromatic (:c4 note-freqs) 25)
-        key-notes (:major key')]
+  (let [all-notes (chromatic (:c3 note-freqs) 37)
+        key-notes (:minor key')]
     (filter identity
             (for [x (range (count all-notes))]
               (if (nth key-notes (mod x 12)) (nth all-notes x))))))
