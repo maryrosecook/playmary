@@ -8,13 +8,13 @@
 
 (def timbre js/T)
 
-(def colors [{:light "6DA0CB" :dark "314B61"}
-             {:light "A76AB9" :dark "4F2F59"}
-             {:light "BB67A2" :dark "5E3152"}
-             {:light "C55D83" :dark "692F44"}
-             {:light "D35E4C" :dark "692B22"}
-             {:light "E18C43" :dark "6B401C"}
-             {:light "E1B040" :dark "69511A"}])
+(def colors [{:light "#6DA0CB" :dark "#314B61"}
+             {:light "#A76AB9" :dark "#4F2F59"}
+             {:light "#BB67A2" :dark "#5E3152"}
+             {:light "#C55D83" :dark "#692F44"}
+             {:light "#D35E4C" :dark "#692B22"}
+             {:light "#E18C43" :dark "#6B401C"}
+             {:light "#E1B040" :dark "#69511A"}])
 
 ;; later: use pagehide to cancel in-progress presses when leaving tab
 
