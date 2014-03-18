@@ -7,6 +7,7 @@ musicbox.js
 /out/goog/
 /out/musicbox/
 /out/.js
+/out/.js.map
 /target/
 .lein-deps-sum
 .lein-repl-history
