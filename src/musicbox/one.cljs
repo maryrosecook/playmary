@@ -63,11 +63,12 @@
 
 (defn touch-data->touches [touch-data]
   (let [event (.-event_ touch-data)
-        touches (js->clj (.-changedTouches event))]
+        touches (js->clj (.-changedTouches event) :keywordize-keys true)]
     (map (fn [x] {:type (.-type event)
-                  :touch-id (get x "identifier")
-                  :clientX (get x "clientX")})
-         (for [x (range (get touches "length"))] (get touches (str x))))))
+                  :touch-id (:identifier x)
+                  :clientX (:clientX x)
+                  :time (.-timeStamp event)})
+         (for [x (range (:length touches))] ((keyword (str x)) touches)))))
 
 
 (defn touch->freq
