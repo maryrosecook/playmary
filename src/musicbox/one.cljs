@@ -16,8 +16,6 @@
              {:light "#E18C43" :dark "#6B401C"}
              {:light "#E1B040" :dark "#69511A"}])
 
-
-(defn draw [draw-ctx instrument]
 (defn draw-start-screen [draw-ctx]
   (let [{w-window :w h-window :h} (util/get-window-size)
         w-text 200
@@ -29,6 +27,8 @@
                text
                (center-dimension w-window w-text)
                (center-dimension h-window h-text))))
+
+(defn draw-instrument [draw-ctx instrument]
   (let [{w :w h :h} instrument
         freqs (keys (:piano-keys instrument))
         note-count (count freqs)
