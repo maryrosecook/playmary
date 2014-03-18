@@ -6,6 +6,7 @@ musicbox.js
 /out/cljs/
 /out/goog/
 /out/musicbox/
+/out/.js
 /target/
 .lein-deps-sum
 .lein-repl-history
