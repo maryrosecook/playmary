@@ -54,6 +54,7 @@
    :drop goog.events.EventType.DROP
    :dragent goog.events.EventType.DRAGEND
 
+   :orientation-change "orientationchange"
    })
 
 (defn listen
