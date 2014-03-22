@@ -19,10 +19,10 @@
   { :w (or (.-innerWidth js/window) (.-clientWidth (.-body js/document)))
     :h (or (.-innerHeight js/window) (.-clientHeight (.-body js/document)))})
 
-(defn set-canvas-size! [canvas-id width height]
+(defn set-canvas-size! [canvas-id {w :w h :h}]
   (let [canvas (dom/getElement canvas-id)]
-    (set! (. canvas -width) width)
-    (set! (. canvas -height) height)))
+    (set! (. canvas -width) w)
+    (set! (. canvas -height) h)))
 
 (defn get-ctx [canvas-id]
   (.getContext (dom/getElement canvas-id) "2d"))
