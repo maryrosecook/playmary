@@ -32,7 +32,7 @@
   (let [{w :w h :h} instrument
         freqs (keys (:piano-keys instrument))
         note-count (count freqs)
-        note-width (/ w note-count)]
+        note-width (.round js/Math (/ w note-count))]
     (.clearRect draw-ctx 0 0 w h)
     (dotimes [n note-count]
       (let [note (first (:notes (get (:piano-keys instrument) (nth freqs n))))
