@@ -118,7 +118,6 @@
         (assoc (assoc instrument :h h) :w w))))
 
 (let [canvas-id "canvas"
-      draw-ctx (util/get-ctx canvas-id)
       instrument (update-size (create-instrument (scales/c-minor)) canvas-id)
       c-app-state (chan)
       c-instrument (chan)
@@ -131,13 +130,14 @@
    (>! c-app-state "start"))
 
   (go
-   (draw-start-screen draw-ctx)
-   (loop [instrument (<! c-instrument)]
-     (let [[data c] (alts! [c-instrument (timeout 30)])]
-       (condp = c
-         c-instrument (recur data)
-         (do (draw-instrument draw-ctx instrument)
-             (recur instrument))))))
+   (let [draw-ctx (util/get-ctx canvas-id)]
+     (draw-start-screen draw-ctx)
+     (loop [instrument (<! c-instrument)]
+       (let [[data c] (alts! [c-instrument (timeout 30)])]
+         (condp = c
+           c-instrument (recur data)
+           (do (draw-instrument draw-ctx instrument)
+               (recur instrument)))))))
 
   (go
    (<! c-app-state)
