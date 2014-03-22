@@ -28,11 +28,15 @@
                (center-dimension w-window w-text)
                (center-dimension h-window h-text))))
 
+(defn piano-key-width
+  [piano-keys w]
+  (.round js/Math (/ w (count piano-keys))))
+
 (defn draw-instrument [draw-ctx instrument]
   (let [{w :w h :h} instrument
         freqs (keys (:piano-keys instrument))
         note-count (count freqs)
-        note-width (.round js/Math (/ w note-count))]
+        piano-key-w (piano-key-width (:piano-keys instrument) w)]
     (.clearRect draw-ctx 0 0 w h)
     (dotimes [n note-count]
       (let [note (first (:notes (get (:piano-keys instrument) (nth freqs n))))
@@ -40,7 +44,12 @@
         (set! (.-fillStyle draw-ctx)
               ((if note-on :light :dark)
                (nth colors (mod n (count colors)))))
-        (.fillRect draw-ctx (* n note-width) 0 note-width h)))))
+        (.fillRect draw-ctx (* n piano-key-w) 0 piano-key-w h)))))
+
+(defn touch->note
+  [x w scale]
+  (let [note-index (.floor js/Math (/ x (piano-key-width scale w)))]
+    (nth scale note-index)))
 
 (defn create-note-synth
   [freq]
@@ -73,10 +82,9 @@
 
 (defn touch->freq
   [instrument touch]
-  (scales/quantize (get touch :clientX)
-                   0
-                   (:w instrument)
-                   (keys (:piano-keys instrument))))
+  (touch->note (get touch :clientX)
+               (:w instrument)
+               (keys (:piano-keys instrument))))
 
 (def instrument-fns
   {"touchstart" (fn

@@ -12,14 +12,6 @@
           (chromatic (* freq (.pow js/Math 2 (/ 1 12))) (dec n)))
     []))
 
-(defn quantize
-  [x start-x end-x scale]
-  (if (and (>= x start-x) (< x end-x))
-    (let [note-index (.floor js/Math (/ x
-                                        (/ (- end-x start-x)
-                                            (count scale))))]
-      (nth scale note-index))))
-
 (defn c-minor
   []
   (let [all-notes (chromatic (:c3 note-freqs) 37)
