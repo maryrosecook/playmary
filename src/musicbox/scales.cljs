@@ -2,7 +2,7 @@
 
 (def note-freqs {:c3 130.81 :c4 261.6})
 (def key' {:major [true false true false true true false true false true false true]
-          :minor [true false true true false true false true true false true false]})
+           :minor [true false true true false true false true true false true false]})
 
 
 (defn chromatic
