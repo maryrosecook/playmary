@@ -112,13 +112,12 @@
         instrument)))
 
 (defn update-size [instrument canvas-id]
-  (let [{w :w h :h} (util/get-window-size)]
-    (do (util/set-canvas-size! canvas-id w h)
+  (let [{w :w h :h :as window-size} (util/get-window-size)]
+    (do (util/set-canvas-size! canvas-id window-size)
         (.scrollTo js/window 0 0) ;; Safari leaves window part scrolled down after turn
         (assoc (assoc instrument :h h) :w w))))
 
 (let [canvas-id "canvas"
-      instrument (update-size (create-instrument (scales/c-minor)) canvas-id)
       c-app-state (chan)
       c-instrument (chan)
       c-orientation-change (util/listen js/window :orientation-change)
@@ -131,6 +130,7 @@
 
   (go
    (let [draw-ctx (util/get-ctx canvas-id)]
+     (util/set-canvas-size! canvas-id (util/get-window-size))
      (draw-start-screen draw-ctx)
      (loop [instrument (<! c-instrument)]
        (let [[data c] (alts! [c-instrument (timeout 30)])]
@@ -141,7 +141,7 @@
 
   (go
    (<! c-app-state)
-   (loop [instrument instrument]
+   (loop [instrument (update-size (create-instrument (scales/c-minor)) canvas-id)]
      (>! c-instrument instrument)
      (let [[data c] (alts! [c-touch-start c-touch-end
                             c-orientation-change])]
@@ -150,4 +150,5 @@
          (recur (reduce fire-event-on-instrument
                         instrument
                         (touch-data->touches data)))))))
+
   )
