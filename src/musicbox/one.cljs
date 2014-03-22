@@ -38,7 +38,7 @@
       (let [note (first (:notes (get (:piano-keys instrument) (nth freqs n))))
             note-on (and note (nil? (:off note)))]
         (set! (.-fillStyle draw-ctx)
-              ((if note-on :dark :light)
+              ((if note-on :light :dark)
                (nth colors (mod n (count colors)))))
         (.fillRect draw-ctx (* n note-width) 0 note-width h)))))
 
