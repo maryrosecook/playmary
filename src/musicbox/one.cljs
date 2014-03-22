@@ -112,7 +112,7 @@
 (let [canvas-id "canvas"
       draw-ctx (util/get-ctx canvas-id)
       instrument (update-size (create-instrument (scales/c-minor)) canvas-id)
-      c-program-state (chan)
+      c-app-state (chan)
       c-instrument (chan)
       c-orientation-change (util/listen js/window :orientation-change)
       c-touch-start (util/listen (dom/getElement canvas-id) :touchstart)
@@ -120,7 +120,7 @@
 
   (go
    (<! c-touch-start) (<! c-touch-end) ;; start after first touch so don't break sound
-   (>! c-program-state "start"))
+   (>! c-app-state "start"))
 
   (go
    (draw-start-screen draw-ctx)
@@ -132,7 +132,7 @@
              (recur instrument))))))
 
   (go
-   (<! c-program-state)
+   (<! c-app-state)
    (loop [instrument instrument]
      (>! c-instrument instrument)
      (let [[data c] (alts! [c-touch-start c-touch-end
