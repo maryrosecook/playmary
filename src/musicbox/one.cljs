@@ -48,10 +48,10 @@
 (defn create-instrument
   [scale]
   {:piano-keys (apply sorted-map
-                 (flatten (map vector
-                               scale
-                               (map (fn [_] {:notes []})
-                                    scale))))
+                      (flatten (map vector
+                                    scale
+                                    (map (fn [_] {:notes []})
+                                         scale))))
    :w 0
    :h 0})
 
@@ -95,9 +95,9 @@
                 [{piano-keys :piano-keys :as instrument} {touch-id :touch-id :as event}]
                 (if-let [freq (first (filter (fn [x] (= touch-id (:touch-id (first (:notes (get piano-keys x))))))
                                              (keys piano-keys)))]
-                    (do
-                      (.release (:synth (get piano-keys freq)))
-                      (assoc-in instrument [:piano-keys freq :notes] []))))})
+                  (do
+                    (.release (:synth (get piano-keys freq)))
+                    (assoc-in instrument [:piano-keys freq :notes] []))))})
 
 (defn fire-event-on-instrument
   [instrument event]
