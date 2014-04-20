@@ -62,10 +62,16 @@
   {:piano-keys (apply sorted-map
                  (flatten (map vector
                                scale
-                               (map (fn [x] {:synth (create-note-synth x) :notes []})
+                               (map (fn [_] {:notes []})
                                     scale))))
    :w 0
    :h 0})
+
+(defn add-synths-to-instrument
+  [instrument]
+  (reduce (fn [a x] (assoc-in a [:piano-keys x :synth] (create-note-synth x)))
+          instrument
+          (-> instrument :piano-keys keys)))
 
 (defn audio-time []
   (.-currentTime js/audioCtx))
