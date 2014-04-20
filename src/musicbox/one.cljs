@@ -2,7 +2,7 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [goog.dom :as dom]
             [goog.events :as events]
-            [cljs.core.async :refer [<! put! chan timeout merge sliding-buffer]]
+            [cljs.core.async :refer [<! put! chan timeout merge sliding-buffer close!]]
             [musicbox.util :as util]
             [musicbox.scales :as scales]))
 
@@ -15,18 +15,6 @@
              {:light "#D35E4C" :dark "#692B22"}
              {:light "#E18C43" :dark "#6B401C"}
              {:light "#E1B040" :dark "#69511A"}])
-
-(defn draw-start-screen [draw-ctx]
-  (let [{w-window :w h-window :h} (util/get-window-size)
-        w-text 200
-        h-text 70
-        text "Tap the screen to start"
-        center-dimension (fn [window text] (- (/ window 2) (/ text 2)))]
-    (set! (.-font draw-ctx) "20px Verdana")
-    (.fillText draw-ctx
-               text
-               (center-dimension w-window w-text)
-               (center-dimension h-window h-text))))
 
 (defn piano-key-width
   [piano-keys w]
@@ -54,7 +42,7 @@
 (defn create-note-synth
   [freq]
   (timbre "adsr"
-          (js-obj "a" 5 "d" 10000 "s" 0 "r" 500)
+          (js-obj "a" 5 "d" 100 "s" 0 "r" 5)
           (timbre "fami" (js-obj "freq" freq "mul" 0.1))))
 
 (defn create-instrument
@@ -85,7 +73,6 @@
                   :time (.-timeStamp event)})
          (for [x (range (:length touches))] ((keyword (str x)) touches)))))
 
-
 (defn touch->freq
   [instrument touch]
   (touch->note (get touch :clientX)
@@ -99,7 +86,8 @@
                         piano-key (get (:piano-keys instrument) freq)]
                     (if (empty? (:notes piano-key))
                       (do
-                        (.play (.bang (:synth piano-key)))
+                        (println "play" piano-key)
+                        ;; (.play (.bang (:synth piano-key)))
                         (assoc-in instrument
                                   [:piano-keys freq :notes]
                                   [{:on time :off nil :touch-id touch-id}])))))
@@ -123,22 +111,28 @@
         (.scrollTo js/window 0 0) ;; Safari leaves window part scrolled down after turn
         (assoc (assoc instrument :h h) :w w))))
 
+(defn create-input-channel
+  [canvas-id]
+  (merge [(util/listen (dom/getElement canvas-id) :touchstart)
+          (util/listen (dom/getElement canvas-id) :touchend)]))
+
 (let [canvas-id "canvas"
       c-app-state (chan)
       c-instrument (chan)
       c-orientation-change (util/listen js/window :orientation-change)
-      c-touch-start (util/listen (dom/getElement canvas-id) :touchstart)
-      c-touch-end (util/listen (dom/getElement canvas-id) :touchend)]
+      c-input (create-input-channel canvas-id)]
 
   (go
-   (<! c-touch-start) (<! c-touch-end) ;; start after first touch so don't break sound
-   (>! c-app-state "start"))
+   ;; start after input so don't break sound
+   (let [c-start (create-input-channel canvas-id)]
+     (<! c-start)
+     (close! c-start)
+     (>! c-app-state "start")))
 
   (go
    (let [draw-ctx (util/get-ctx canvas-id)]
      (util/set-canvas-size! canvas-id (util/get-window-size))
-     (draw-start-screen draw-ctx)
-     (loop [instrument (<! c-instrument)]
+     (loop [instrument nil]
        (let [[data c] (alts! [c-instrument (timeout 30)])]
          (condp = c
            c-instrument (recur data)
@@ -146,12 +140,11 @@
                (recur instrument)))))))
 
   (go
-   (<! c-app-state)
    (loop [instrument (update-size (create-instrument (scales/c-minor)) canvas-id)]
      (>! c-instrument instrument)
-     (let [[data c] (alts! [c-touch-start c-touch-end
-                            c-orientation-change])]
+     (let [[data c] (alts! [c-input c-orientation-change c-app-state])]
        (condp = c
+         c-app-state (recur (add-synths-to-instrument instrument))
          c-orientation-change (recur (update-size instrument canvas-id))
          (recur (reduce fire-event-on-instrument
                         instrument
