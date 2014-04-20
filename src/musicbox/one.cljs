@@ -87,7 +87,7 @@
                     (if (empty? (:notes piano-key))
                       (do
                         (println "play" piano-key)
-                        ;; (.play (.bang (:synth piano-key)))
+                        (.play (.bang (:synth piano-key)))
                         (assoc-in instrument
                                   [:piano-keys freq :notes]
                                   [{:on time :off nil :touch-id touch-id}])))))
