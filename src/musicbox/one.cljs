@@ -117,17 +117,9 @@
           (util/listen (dom/getElement canvas-id) :touchend)]))
 
 (let [canvas-id "canvas"
-      c-app-state (chan)
       c-instrument (chan)
       c-orientation-change (util/listen js/window :orientation-change)
       c-input (create-input-channel canvas-id)]
-
-  (go
-   ;; start after input so don't break sound
-   (let [c-start (create-input-channel canvas-id)]
-     (<! c-start)
-     (close! c-start)
-     (>! c-app-state "start")))
 
   (go
    (let [draw-ctx (util/get-ctx canvas-id)]
@@ -140,14 +132,18 @@
                (recur instrument)))))))
 
   (go
-   (loop [instrument (update-size (create-instrument (scales/c-minor)) canvas-id)]
-     (>! c-instrument instrument)
-     (let [[data c] (alts! [c-input c-orientation-change c-app-state])]
-       (condp = c
-         c-app-state (recur (add-synths-to-instrument instrument))
-         c-orientation-change (recur (update-size instrument canvas-id))
-         (recur (reduce fire-event-on-instrument
-                        instrument
-                        (touch-data->touches data)))))))
+   (let [display-instrument (update-size (create-instrument (scales/c-minor)) canvas-id)]
+     (>! c-instrument display-instrument)
+
+     (<! (create-input-channel canvas-id)) ;; wait for first touch before creating synths
+     (let [play-instrument (add-synths-to-instrument display-instrument)]
+
+       (loop [instrument play-instrument]
+         (let [[data c] (alts! [c-input c-orientation-change])]
+           (condp = c
+             c-orientation-change (recur (update-size instrument canvas-id))
+             c-input (recur (reduce fire-event-on-instrument
+                                    instrument
+                                    (touch-data->touches data)))))))))
 
   )
