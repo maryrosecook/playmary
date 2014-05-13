@@ -42,7 +42,7 @@
 (defn create-note-synth
   [freq]
   (timbre "adsr"
-          (js-obj "a" 5 "d" 100 "s" 0 "r" 5)
+          (js-obj "a" 5 "d" 10000 "s" 0 "r" 500)
           (timbre "fami" (js-obj "freq" freq "mul" 0.1))))
 
 (defn create-instrument
