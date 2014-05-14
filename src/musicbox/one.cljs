@@ -23,14 +23,14 @@
 (defn draw-instrument [draw-ctx instrument]
   (let [{w :w h :h} instrument
         freqs (keys (:piano-keys instrument))
-        note-count (count freqs)
         piano-key-w (piano-key-width (:piano-keys instrument) w)]
     (.clearRect draw-ctx 0 0 w h)
-    (dotimes [n note-count]
-      (let [note (first (:notes (get (:piano-keys instrument) (nth freqs n))))
-            note-on (and note (nil? (:off note)))]
+    (dotimes [n (count freqs)]
+      (let [notes (get-in instrument [:piano-keys (nth freqs n) :notes])
+            current-note (get notes (dec (count notes)))
+            piano-key-on (and current-note (nil? (:off current-note)))]
         (set! (.-fillStyle draw-ctx)
-              ((if note-on :light :dark)
+              ((if piano-key-on :light :dark)
                (nth colors (mod n (count colors)))))
         (.fillRect draw-ctx (* n piano-key-w) 0 piano-key-w h)))))
 
@@ -84,20 +84,29 @@
                   [instrument {touch-id :touch-id time :time :as event}]
                   (let [freq (touch->freq instrument event)
                         piano-key (get (:piano-keys instrument) freq)]
-                    (if (empty? (:notes piano-key))
-                      (do
-                        (println "play" piano-key)
-                        (.play (.bang (:synth piano-key)))
-                        (assoc-in instrument
-                                  [:piano-keys freq :notes]
-                                  [{:on time :off nil :touch-id touch-id}])))))
+                    (do
+                      (println "play")
+                      ;; (.play (.bang (:synth piano-key)))
+                      (assoc-in instrument
+                                [:piano-keys freq :notes]
+                                (conj (get-in instrument [:piano-keys freq :notes])
+                                      {:on time :off nil :touch-id touch-id})))))
    "touchend" (fn
-                [{piano-keys :piano-keys :as instrument} {touch-id :touch-id :as event}]
-                (if-let [freq (first (filter (fn [x] (= touch-id (:touch-id (first (:notes (get piano-keys x))))))
-                                             (keys piano-keys)))]
-                  (do
-                    (.release (:synth (get piano-keys freq)))
-                    (assoc-in instrument [:piano-keys freq :notes] []))))})
+                [{piano-keys :piano-keys :as instrument}
+                 {touch-id :touch-id time :time :as event}]
+                (reduce (fn [instrument freq]
+                          (let [notes (get-in instrument [:piano-keys freq :notes])
+                                note-i (dec (count notes))]
+                            (if (= touch-id (get-in notes [note-i :touch-id]))
+                              (do
+                                (println "release")
+                                ;; (.release (:synth (get piano-keys freq)))
+                                (assoc-in instrument
+                                          [:piano-keys freq :notes note-i :off]
+                                          time))
+                              instrument)))
+                        instrument
+                        (-> instrument :piano-keys keys)))})
 
 (defn fire-event-on-instrument
   [instrument event]
@@ -136,14 +145,13 @@
      (>! c-instrument display-instrument)
 
      (<! (create-input-channel canvas-id)) ;; wait for first touch before creating synths
-     (let [play-instrument (add-synths-to-instrument display-instrument)]
-
-       (loop [instrument play-instrument]
-         (let [[data c] (alts! [c-input c-orientation-change])]
-           (condp = c
-             c-orientation-change (recur (update-size instrument canvas-id))
-             c-input (recur (reduce fire-event-on-instrument
-                                    instrument
-                                    (touch-data->touches data)))))))))
+     (loop [instrument (add-synths-to-instrument display-instrument)]
+       (>! c-instrument instrument)
+       (let [[data c] (alts! [c-input c-orientation-change])]
+         (condp = c
+           c-orientation-change (recur (update-size instrument canvas-id))
+           c-input (recur (reduce fire-event-on-instrument
+                                  instrument
+                                  (touch-data->touches data))))))))
 
   )
