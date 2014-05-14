@@ -47,11 +47,7 @@
 
 (defn create-instrument
   [scale]
-  {:piano-keys (apply sorted-map
-                      (flatten (map vector
-                                    scale
-                                    (map (fn [_] {:notes []})
-                                         scale))))
+  {:piano-keys (into (sorted-map) (map (fn [s] [s {:notes []}]) scale))
    :w 0
    :h 0})
 
