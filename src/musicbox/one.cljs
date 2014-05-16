@@ -20,15 +20,19 @@
   [piano-keys w]
   (.round js/Math (/ w (count piano-keys))))
 
+(defn latest-note
+  [instrument freq]
+  (util/find-first (fn [note] (= freq (-> note :freq)))
+                   (-> instrument :notes)))
+
 (defn draw-instrument [draw-ctx instrument]
   (let [{w :w h :h} instrument
-        freqs (keys (:piano-keys instrument))
+        freqs (-> instrument :piano-keys keys)
         piano-key-w (piano-key-width (:piano-keys instrument) w)]
     (.clearRect draw-ctx 0 0 w h)
     (dotimes [n (count freqs)]
-      (let [notes (get-in instrument [:piano-keys (nth freqs n) :notes])
-            current-note (get notes (dec (count notes)))
-            piano-key-on (and current-note (nil? (:off current-note)))]
+      (let [note (latest-note instrument (nth freqs n))
+            piano-key-on (and note (-> note :off nil?))]
         (set! (.-fillStyle draw-ctx)
               ((if piano-key-on :light :dark)
                (nth colors (mod n (count colors)))))
@@ -47,9 +51,9 @@
 
 (defn create-instrument
   [scale]
-  {:piano-keys (into (sorted-map) (map (fn [s] [s {:notes []}]) scale))
-   :w 0
-   :h 0})
+  {:piano-keys (into {} (map (fn [freq] [freq {}])
+                             scale))
+   :notes [] :w 0 :h 0})
 
 (defn add-synths-to-instrument
   [instrument]
@@ -79,30 +83,25 @@
   {"touchstart" (fn
                   [instrument {touch-id :touch-id time :time :as event}]
                   (let [freq (touch->freq instrument event)
-                        piano-key (get (:piano-keys instrument) freq)]
+                        piano-key (get-in instrument [:piano-keys freq])]
                     (do
                       (println "play")
                       ;; (.play (.bang (:synth piano-key)))
-                      (assoc-in instrument
-                                [:piano-keys freq :notes]
-                                (conj (get-in instrument [:piano-keys freq :notes])
-                                      {:on time :off nil :touch-id touch-id})))))
+                      (assoc instrument :notes
+                             (conj (get instrument :notes)
+                                   {:freq freq :on time :off nil :touch-id touch-id})))))
    "touchend" (fn
                 [{piano-keys :piano-keys :as instrument}
                  {touch-id :touch-id time :time :as event}]
-                (reduce (fn [instrument freq]
-                          (let [notes (get-in instrument [:piano-keys freq :notes])
-                                note-i (dec (count notes))]
-                            (if (= touch-id (get-in notes [note-i :touch-id]))
-                              (do
-                                (println "release")
-                                ;; (.release (:synth (get piano-keys freq)))
-                                (assoc-in instrument
-                                          [:piano-keys freq :notes note-i :off]
-                                          time))
-                              instrument)))
-                        instrument
-                        (-> instrument :piano-keys keys)))})
+                (assoc instrument :notes
+                       (map (fn [note]
+                              (if (= touch-id (-> note :touch-id))
+                                (do
+                                  (println "release")
+                                  ;; (.release (:synth (get piano-keys freq)))
+                                  (assoc note :off time))
+                                note))
+                            (-> instrument :notes))))})
 
 (defn fire-event-on-instrument
   [instrument event]
