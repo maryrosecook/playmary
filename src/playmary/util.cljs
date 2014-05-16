@@ -1,4 +1,4 @@
-(ns musicbox.util
+(ns playmary.util
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [goog.dom :as dom]
             [goog.events :as events]

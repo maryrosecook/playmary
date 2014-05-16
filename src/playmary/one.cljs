@@ -1,10 +1,10 @@
-(ns musicbox.one
+(ns playmary.one
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [goog.dom :as dom]
             [goog.events :as events]
             [cljs.core.async :refer [<! put! chan timeout merge sliding-buffer close!]]
-            [musicbox.util :as util]
-            [musicbox.scales :as scales]))
+            [playmary.util :as util]
+            [playmary.scales :as scales]))
 
 (def timbre js/T)
 
@@ -51,8 +51,8 @@
 
 (defn create-instrument
   [scale]
-  {:piano-keys (into {} (map (fn [freq] [freq {}])
-                             scale))
+  {:piano-keys (into (sorted-map) (map (fn [freq] [freq {}])
+                                       scale))
    :notes [] :w 0 :h 0})
 
 (defn add-synths-to-instrument
@@ -85,8 +85,8 @@
                   (let [freq (touch->freq instrument event)
                         piano-key (get-in instrument [:piano-keys freq])]
                     (do
-                      (println "play")
-                      ;; (.play (.bang (:synth piano-key)))
+                      ;; (println "play")
+                      (.play (.bang (:synth piano-key)))
                       (assoc instrument :notes
                              (conj (get instrument :notes)
                                    {:freq freq :on time :off nil :touch-id touch-id})))))
@@ -97,8 +97,8 @@
                        (map (fn [note]
                               (if (= touch-id (-> note :touch-id))
                                 (do
-                                  (println "release")
-                                  ;; (.release (:synth (get piano-keys freq)))
+                                  ;; (println "release")
+                                  (.release (:synth (get piano-keys (-> note :freq))))
                                   (assoc note :off time))
                                 note))
                             (-> instrument :notes))))})

@@ -1,11 +1,11 @@
 pom.xml
-musicbox.js
+playmary.js
 *jar
 /lib/
 /classes/
 /out/cljs/
 /out/goog/
-/out/musicbox/
+/out/playmary/
 /out/.js
 /out/.js.map
 /target/

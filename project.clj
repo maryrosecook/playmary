@@ -1,4 +1,4 @@
-(defproject musicbox "0.1.0"
+(defproject playmary "0.1.0"
   :description "FIXME: write this!"
   :url "http://example.com/FIXME"
 
@@ -11,10 +11,10 @@
   :source-paths ["src"]
 
   :cljsbuild {
-    :builds [{:id "musicbox"
+    :builds [{:id "playmary"
               :source-paths ["src"]
               :compiler {
-                :output-to "musicbox.js"
+                :output-to "playmary.js"
                 :output-dir "out"
                 :optimizations :none
                 :source-map true}}]})
