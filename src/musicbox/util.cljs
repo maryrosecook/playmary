@@ -27,6 +27,10 @@
 (defn get-ctx [canvas-id]
   (.getContext (dom/getElement canvas-id) "2d"))
 
+(defn find-first
+  [pred coll]
+  (first (filter pred coll)))
+
 (def keyword->event-type
   {:keyup goog.events.EventType.KEYUP
    :keydown goog.events.EventType.KEYDOWN
