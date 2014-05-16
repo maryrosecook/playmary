@@ -53,13 +53,14 @@
   [scale]
   {:piano-keys (into (sorted-map) (map (fn [freq] [freq {}])
                                        scale))
-   :notes [] :w 0 :h 0})
+   :notes [] :w 0 :h 0 :sound-ready false})
 
 (defn add-synths-to-instrument
   [instrument]
-  (reduce (fn [a x] (assoc-in a [:piano-keys x :synth] (create-note-synth x)))
-          instrument
-          (-> instrument :piano-keys keys)))
+  (assoc (reduce (fn [a x] (assoc-in a [:piano-keys x :synth] (create-note-synth x)))
+                 instrument
+                 (-> instrument :piano-keys keys))
+    :sound-ready true))
 
 (defn audio-time []
   (.-currentTime js/audioCtx))
@@ -109,6 +110,14 @@
     (or (and f-instrument (f-instrument instrument event))
         instrument)))
 
+(defn fire-touch-data-on-instrument
+  [instrument data]
+  (if (-> instrument :sound-ready)
+    (reduce fire-event-on-instrument
+            instrument
+            (touch-data->touches data))
+    (recur (add-synths-to-instrument instrument) data)))
+
 (defn update-size [instrument canvas-id]
   (let [{w :w h :h :as window-size} (util/get-window-size)]
     (do (util/set-canvas-size! canvas-id window-size)
@@ -123,7 +132,7 @@
 (let [canvas-id "canvas"
       c-instrument (chan)
       c-orientation-change (util/listen js/window :orientation-change)
-      c-input (create-input-channel canvas-id)]
+      c-touch (create-input-channel canvas-id)]
 
   (go
    (let [draw-ctx (util/get-ctx canvas-id)]
@@ -136,17 +145,10 @@
                (recur instrument)))))))
 
   (go
-   (let [display-instrument (update-size (create-instrument (scales/c-minor)) canvas-id)]
-     (>! c-instrument display-instrument)
-
-     (<! (create-input-channel canvas-id)) ;; wait for first touch before creating synths
-     (loop [instrument (add-synths-to-instrument display-instrument)]
-       (>! c-instrument instrument)
-       (let [[data c] (alts! [c-input c-orientation-change])]
-         (condp = c
-           c-orientation-change (recur (update-size instrument canvas-id))
-           c-input (recur (reduce fire-event-on-instrument
-                                  instrument
-                                  (touch-data->touches data))))))))
-
+   (loop [instrument (update-size (create-instrument (scales/c-minor)) canvas-id)]
+     (>! c-instrument instrument)
+     (let [[data c] (alts! [c-touch c-orientation-change])]
+       (condp = c
+         c-orientation-change (recur (update-size instrument canvas-id))
+         c-touch (recur (fire-touch-data-on-instrument instrument data))))))
   )
