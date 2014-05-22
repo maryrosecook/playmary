@@ -104,12 +104,13 @@
 
 (defn create-instrument
   [scale]
-  {:piano-keys (into (sorted-map) (map-indexed (fn [i freq] [freq {:n i}])
-                                               scale))
-   :notes [] :w 0 :h 0 :sound-ready false
-   :px-per-ms 0.04
-   :start (.getTime (js/Date.))
-   :playhead (.getTime (js/Date.))})
+  (let [start (.getTime (js/Date.))]
+    {:piano-keys (into (sorted-map) (map-indexed (fn [i freq] [freq {:n i}])
+                                                 scale))
+     :notes [] :w 0 :h 0 :sound-ready false
+     :px-per-ms 0.04
+     :start start
+     :playhead start}))
 
 (defn add-synths-to-instrument
   [instrument]
