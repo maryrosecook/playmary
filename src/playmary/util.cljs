@@ -31,6 +31,11 @@
   [pred coll]
   (first (filter pred coll)))
 
+(defn index-of
+  [coll item]
+  (find-first (fn [i] (= item (nth coll i)))
+              (-> coll count range)))
+
 (def keyword->event-type
   {:keyup goog.events.EventType.KEYUP
    :keydown goog.events.EventType.KEYDOWN
