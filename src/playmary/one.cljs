@@ -22,8 +22,8 @@
 
 (defn latest-note
   [instrument freq]
-  (util/find-first (fn [note] (= freq (-> note :freq)))
-                   (-> instrument :notes)))
+  (some (fn [note] (and (= freq (-> note :freq)) note))
+        (-> instrument :notes)))
 
 (defn t->px
   [{start :start px-per-ms :px-per-ms} t]

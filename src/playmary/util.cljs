@@ -27,10 +27,6 @@
 (defn get-ctx [canvas-id]
   (.getContext (dom/getElement canvas-id) "2d"))
 
-(defn find-first
-  [pred coll]
-  (first (filter pred coll)))
-
 (defn index-of
   [coll item]
   (find-first (fn [i] (= item (nth coll i)))
