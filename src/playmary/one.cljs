@@ -47,11 +47,6 @@
   [{w :w h :h playhead :playhead :as instrument}]
   {:x 0 :y (t->px instrument playhead) :w w :h h})
 
-(defn color-set
-  [instrument freq]
-  (nth colors (mod (util/index-of (-> instrument :piano-keys keys) freq)
-                   (count colors))))
-
 (defn draw-note
   [draw-ctx instrument note]
   (let [{x :x y :y w :w h :h} (note-rect note instrument)]
@@ -81,11 +76,10 @@
   (let [freqs (-> instrument :piano-keys keys)
         piano-key-w (piano-key-width instrument)]
     (dotimes [n (count freqs)]
-      (let [freq (nth freqs n)
-            note (latest-note instrument freq)
+      (let [note (latest-note instrument (nth freqs n))
             piano-key-on (and note (-> note :off nil?))]
         (set! (.-fillStyle draw-ctx)
-              ((if piano-key-on :light :dark) (color-set instrument freq)))
+              ((if piano-key-on :light :dark) (nth colors (mod n (count colors)))))
         (.fillRect draw-ctx
                    (* n piano-key-w)
                    (t->px instrument playhead)
@@ -113,8 +107,8 @@
 
 (defn create-instrument
   [scale]
-  {:piano-keys (into (sorted-map) (map (fn [freq] [freq {}])
-                                       scale))
+  {:piano-keys (into (sorted-map) (map-indexed (fn [i freq] [freq {:n i}])
+                                               scale))
    :notes [] :w 0 :h 0 :sound-ready false
    :px-per-ms 0.01
    :start (.getTime (js/Date.))
