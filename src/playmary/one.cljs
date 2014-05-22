@@ -64,9 +64,9 @@
 
 (defn draw-notes
   [draw-ctx instrument]
-  (dorun (map (partial draw-note draw-ctx instrument)
-              (filter (partial on-screen? instrument)
-                      (-> instrument :notes)))))
+  (doseq [note (filter (partial on-screen? instrument)
+                       (-> instrument :notes))]
+    (draw-note draw-ctx instrument note)))
 
 (defn draw-piano-keys
   [draw-ctx {w :w h :h playhead :playhead :as instrument}]
