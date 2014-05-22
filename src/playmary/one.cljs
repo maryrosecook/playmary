@@ -163,13 +163,17 @@
     (or (and f-instrument (f-instrument instrument event))
         instrument)))
 
+(defn maybe-init-synths
+  [instrument]
+  (if (:sound-ready instrument)
+    instrument
+    (add-synths-to-instrument instrument)))
+
 (defn fire-touch-data-on-instrument
   [instrument data]
-  (if (-> instrument :sound-ready)
-    (reduce fire-event-on-instrument
-            instrument
-            (touch-data->touches data))
-    (recur (add-synths-to-instrument instrument) data)))
+  (reduce fire-event-on-instrument
+          (maybe-init-synths instrument)
+          (touch-data->touches data)))
 
 (defn update-size [instrument canvas-id]
   (let [{w :w h :h :as window-size} (util/get-window-size)]
