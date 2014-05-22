@@ -8,16 +8,16 @@
 
 (def timbre js/T)
 
-(def colors [{:light "#6DA0CB" :dark "#000000"}
-             {:light "#A76AB9" :dark "#2E2E2E"}
-             {:light "#BB67A2" :dark "#525252"}
-             {:light "#C55D83" :dark "#818181"}
-             {:light "#D35E4C" :dark "#AAAAAA"}
-             {:light "#E18C43" :dark "#D7D7D7"}
-             {:light "#E1B040" :dark "#FFFFFF"}])
+(def colors [{:note "#676767" :light "#6DA0CB" :dark "#000000"}
+             {:note "#929292" :light "#A76AB9" :dark "#1E1E1E"}
+             {:note "#B9B9B9" :light "#BB67A2" :dark "#3D3D3D"}
+             {:note "#DCDCDC" :light "#C55D83" :dark "#5C5C5C"}
+             {:note "#FFFFFF" :light "#D35E4C" :dark "#7A7A7A"}
+             {:note "#000000" :light "#E18C43" :dark "#999999"}
+             {:note "#393939" :light "#E1B040" :dark "#B9B9B9"}])
 
 (defn piano-key-width
-  [piano-keys w]
+  [{piano-keys :piano-keys w :w}]
   (.round js/Math (/ w (count piano-keys))))
 
 (defn latest-note
@@ -25,23 +25,85 @@
   (util/find-first (fn [note] (= freq (-> note :freq)))
                    (-> instrument :notes)))
 
-(defn draw-instrument [draw-ctx instrument]
-  (let [{w :w h :h} instrument
-        freqs (-> instrument :piano-keys keys)
-        piano-key-w (piano-key-width (:piano-keys instrument) w)]
-    (.clearRect draw-ctx 0 0 w h)
+(defn t->px
+  [{start :start px-per-ms :px-per-ms} t]
+  (* px-per-ms (- t start)))
+
+(defn note-rect
+  [{on :on off :off freq :freq :as note}
+   {px-per-ms :px-per-ms playhead :playhead :as instrument}]
+  (let [piano-key-w (piano-key-width instrument)
+        note-w 4
+        note-left (* piano-key-w (util/index-of (-> instrument :piano-keys keys) freq))]
+    {:x (- (+ note-left (/ piano-key-w 2))
+           (/ note-w 2))
+     :y (+ (t->px instrument on)
+           (/ (-> instrument :h) 2))
+     :w note-w
+     :h (- (t->px instrument (or off playhead))
+           (t->px instrument on))}))
+
+(defn screen-rect
+  [{w :w h :h playhead :playhead :as instrument}]
+  {:x 0 :y (t->px instrument playhead) :w w :h h})
+
+(defn color-set
+  [instrument freq]
+  (nth colors (mod (util/index-of (-> instrument :piano-keys keys) freq)
+                   (count colors))))
+
+(defn draw-note
+  [draw-ctx instrument note]
+  (let [{x :x y :y w :w h :h} (note-rect note instrument)]
+    (set! (.-fillStyle draw-ctx) "white")
+    (.fillRect draw-ctx x y w h)))
+
+(defn colliding?
+  [r1 r2]
+  (not (or (< (+ (:x r1) (:w r1)) (:x r2))
+           (< (+ (:y r1) (:h r1)) (:y r2))
+           (> (:x r1) (+ (:x r2) (:w r2)))
+           (> (:y r1) (+ (:y r2) (:h r2))))))
+
+(defn on-screen?
+  [instrument note]
+  (colliding? (note-rect note instrument)
+              (screen-rect instrument)))
+
+(defn draw-notes
+  [draw-ctx instrument]
+  (dorun (map (partial draw-note draw-ctx instrument)
+              (filter (partial on-screen? instrument)
+                      (-> instrument :notes)))))
+
+(defn draw-piano-keys
+  [draw-ctx {w :w h :h playhead :playhead :as instrument}]
+  (let [freqs (-> instrument :piano-keys keys)
+        piano-key-w (piano-key-width instrument)]
     (dotimes [n (count freqs)]
-      (let [note (latest-note instrument (nth freqs n))
+      (let [freq (nth freqs n)
+            note (latest-note instrument freq)
             piano-key-on (and note (-> note :off nil?))]
         (set! (.-fillStyle draw-ctx)
-              ((if piano-key-on :light :dark)
-               (nth colors (mod n (count colors)))))
-        (.fillRect draw-ctx (* n piano-key-w) 0 piano-key-w h)))))
+              ((if piano-key-on :light :dark) (color-set instrument freq)))
+        (.fillRect draw-ctx
+                   (* n piano-key-w)
+                   (t->px instrument playhead)
+                   piano-key-w h)))))
+
+(defn draw-instrument
+  [draw-ctx {w :w h :h playhead :playhead :as instrument}]
+  (.save draw-ctx)
+  (.translate draw-ctx 0 (-> (t->px instrument playhead) -))
+  (.clearRect draw-ctx 0 0 w h)
+  (draw-piano-keys draw-ctx instrument)
+  (draw-notes draw-ctx instrument)
+  (.restore draw-ctx))
 
 (defn touch->note
-  [x w scale]
-  (let [note-index (.floor js/Math (/ x (piano-key-width scale w)))]
-    (nth scale note-index)))
+  [x instrument]
+  (let [note-index (.floor js/Math (/ x (piano-key-width instrument)))]
+    (nth (-> instrument :piano-keys keys) note-index)))
 
 (defn create-note-synth
   [freq]
@@ -53,7 +115,10 @@
   [scale]
   {:piano-keys (into (sorted-map) (map (fn [freq] [freq {}])
                                        scale))
-   :notes [] :w 0 :h 0 :sound-ready false})
+   :notes [] :w 0 :h 0 :sound-ready false
+   :px-per-ms 0.01
+   :start (.getTime (js/Date.))
+   :playhead (.getTime (js/Date.))})
 
 (defn add-synths-to-instrument
   [instrument]
@@ -61,9 +126,6 @@
                  instrument
                  (-> instrument :piano-keys keys))
     :sound-ready true))
-
-(defn audio-time []
-  (.-currentTime js/audioCtx))
 
 (defn touch-data->touches [touch-data]
   (let [event (.-event_ touch-data)
@@ -77,8 +139,7 @@
 (defn touch->freq
   [instrument touch]
   (touch->note (get touch :clientX)
-               (:w instrument)
-               (keys (:piano-keys instrument))))
+               instrument))
 
 (def instrument-fns
   {"touchstart" (fn
@@ -138,7 +199,7 @@
    (let [draw-ctx (util/get-ctx canvas-id)]
      (util/set-canvas-size! canvas-id (util/get-window-size))
      (loop [instrument nil]
-       (let [[data c] (alts! [c-instrument (timeout 30)])]
+       (let [[data c] (alts! [c-instrument (timeout 16)])]
          (condp = c
            c-instrument (recur data)
            (do (draw-instrument draw-ctx instrument)
@@ -147,8 +208,9 @@
   (go
    (loop [instrument (update-size (create-instrument (scales/c-minor)) canvas-id)]
      (>! c-instrument instrument)
-     (let [[data c] (alts! [c-touch c-orientation-change])]
+     (let [[data c] (alts! [c-touch c-orientation-change (timeout 16)])]
        (condp = c
          c-orientation-change (recur (update-size instrument canvas-id))
-         c-touch (recur (fire-touch-data-on-instrument instrument data))))))
+         c-touch (recur (fire-touch-data-on-instrument instrument data))
+         (recur (assoc instrument :playhead (.getTime (js/Date.))))))))
   )
