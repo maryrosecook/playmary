@@ -189,7 +189,7 @@
   (go
    (let [draw-ctx (util/get-ctx canvas-id)]
      (util/set-canvas-size! canvas-id (util/get-window-size))
-     (loop [instrument nil]
+     (loop [instrument (<! c-instrument)]
        (let [[data c] (alts! [c-instrument (timeout 16)])]
          (condp = c
            c-instrument (recur data)
