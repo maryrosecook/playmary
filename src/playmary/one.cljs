@@ -32,14 +32,11 @@
 (defn note-rect
   [{on :on off :off freq :freq :as note}
    {px-per-ms :px-per-ms playhead :playhead :as instrument}]
-  (let [piano-key-w (piano-key-width instrument)
-        note-w 4
-        note-left (* piano-key-w (util/index-of (-> instrument :piano-keys keys) freq))]
-    {:x (- (+ note-left (/ piano-key-w 2))
-           (/ note-w 2))
+  (let [piano-key-w (piano-key-width instrument)]
+    {:x (* piano-key-w (get-in instrument [:piano-keys freq :n]))
      :y (+ (t->px instrument on)
            (/ (-> instrument :h) 2))
-     :w note-w
+     :w piano-key-w
      :h (- (t->px instrument (or off playhead))
            (t->px instrument on))}))
 
