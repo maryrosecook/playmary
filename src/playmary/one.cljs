@@ -176,7 +176,7 @@
         (.scrollTo js/window 0 0) ;; Safari leaves window part scrolled down after turn
         (assoc (assoc instrument :h h) :w w))))
 
-(defn create-input-channel
+(defn create-touch-input-channel
   [canvas-id]
   (async/merge [(util/listen (dom/getElement canvas-id) :touchstart)
                 (util/listen (dom/getElement canvas-id) :touchend)]))
@@ -184,7 +184,7 @@
 (let [canvas-id "canvas"
       c-instrument (chan)
       c-orientation-change (util/listen js/window :orientation-change)
-      c-touch (create-input-channel canvas-id)]
+      c-touch (create-touch-input-channel canvas-id)]
 
   (go
    (let [draw-ctx (util/get-ctx canvas-id)]
