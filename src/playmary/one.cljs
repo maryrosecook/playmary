@@ -145,8 +145,7 @@
                         (-> instrument
                             (assoc :notes (conj (get instrument :notes)
                                                 {:freq freq :on time :off nil :touch-id touch-id}))
-                            (assoc-in [:piano-keys freq :on?] true)))
-                      instrument)))
+                            (assoc-in [:piano-keys freq :on?] true))))))
    "touchend" (fn
                 [{piano-keys :piano-keys :as instrument}
                  {touch-id :touch-id time :time :as event}]
