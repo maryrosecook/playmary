@@ -109,6 +109,7 @@
      :w 0 :h 0 :sound-ready false
      :px-per-ms 0.04
      :start start
+     :previous-time start
      :playhead start}))
 
 (defn add-synths-to-instrument
@@ -218,5 +219,9 @@
        (condp = c
          c-orientation-change (recur (update-size instrument canvas-id))
          c-touch (recur (fire-touch-data-on-instrument instrument data))
-         (recur (assoc instrument :playhead (.getTime (js/Date.))))))))
+         (recur (let [now (.getTime (js/Date.))]
+                  (-> instrument
+                      (assoc :playhead (+ (instrument :playhead)
+                                          (- now (instrument :previous-time))))
+                      (assoc :previous-time now))))))))
   )
