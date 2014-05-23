@@ -12,3 +12,4 @@ playmary.js
 .lein-deps-sum
 .lein-repl-history
 .lein-plugins/
+.DS_Store
