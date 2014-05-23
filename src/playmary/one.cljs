@@ -152,13 +152,12 @@
                 (let [freqs-on (atom [])
                       instrument (assoc instrument :notes
                                         (doall
-                                         (map (fn [note]
-                                                (if (= touch-id (-> note :touch-id))
+                                         (map (fn [{freq :freq :as note}]
+                                                (if (= touch-id (note :touch-id))
                                                   (do
-                                                    (swap! freqs-on conj (-> note :freq))
+                                                    (swap! freqs-on conj freq)
                                                     ;; (println "release")
-                                                    (.release (:synth (get piano-keys
-                                                                           (-> note :freq))))
+                                                    (.release ((get piano-keys freq) :synth))
                                                     (assoc note :off time))
                                                   note))
                                               (-> instrument :notes))))]
