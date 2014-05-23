@@ -194,6 +194,13 @@
   [canvas-id]
   (async/merge [(util/listen (dom/getElement canvas-id) :touchstart)
                 (util/listen (dom/getElement canvas-id) :touchend)]))
+(defn step-time
+  [instrument]
+  (let [now (.getTime (js/Date.))]
+    (-> instrument
+        (assoc :playhead (+ (instrument :playhead)
+                            (- now (instrument :previous-time))))
+        (assoc :previous-time now))))
 
 (let [canvas-id "canvas"
       c-instrument (chan)
@@ -218,9 +225,5 @@
        (condp = c
          c-orientation-change (recur (update-size instrument canvas-id))
          c-touch (recur (fire-touch-data-on-instrument instrument data))
-         (recur (let [now (.getTime (js/Date.))]
-                  (-> instrument
-                      (assoc :playhead (+ (instrument :playhead)
-                                          (- now (instrument :previous-time))))
-                      (assoc :previous-time now))))))))
+         (recur (step-time instrument))))))
   )
