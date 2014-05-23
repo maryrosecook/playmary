@@ -139,8 +139,8 @@
                         piano-key (get-in instrument [:piano-keys freq])]
                     (if-not (:on? piano-key)
                       (do
-                        (println "play")
-                        #_(.play (.bang (:synth piano-key)))
+                        ;; (println "play")
+                        (.play (.bang (:synth piano-key)))
                         (-> instrument
                             (assoc :notes (conj (get instrument :notes)
                                                 {:freq freq :on time :off nil :touch-id touch-id}))
@@ -156,8 +156,9 @@
                                                 (if (= touch-id (-> note :touch-id))
                                                   (do
                                                     (swap! freqs-on conj (-> note :freq))
-                                                    (println "release")
-                                                    #_(.release (:synth (get piano-keys (-> note :freq))))
+                                                    ;; (println "release")
+                                                    (.release (:synth (get piano-keys
+                                                                           (-> note :freq))))
                                                     (assoc note :off time))
                                                   note))
                                               (-> instrument :notes))))]
