@@ -52,10 +52,9 @@
    :dragover goog.events.EventType.DRAGOVER
    :dragleave goog.events.EventType.DRAGLEAVE
    :drop goog.events.EventType.DROP
-   :dragent goog.events.EventType.DRAGEND
+   :dragend goog.events.EventType.DRAGEND
 
-   :orientation-change "orientationchange"
-   })
+   :orientation-change "orientationchange"})
 
 (defn listen
   ([el type] (listen el type nil))
