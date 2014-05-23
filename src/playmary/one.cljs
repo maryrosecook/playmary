@@ -198,13 +198,14 @@
 (let [canvas-id "canvas"
       c-instrument (chan)
       c-orientation-change (util/listen js/window :orientation-change)
-      c-touch (create-touch-input-channel canvas-id)]
+      c-touch (create-touch-input-channel canvas-id)
+      frame-delay 30]
 
   (go
    (let [draw-ctx (util/get-ctx canvas-id)]
      (util/set-canvas-size! canvas-id (util/get-window-size))
      (loop [instrument (<! c-instrument)]
-       (let [[data c] (alts! [c-instrument (timeout 16)])]
+       (let [[data c] (alts! [c-instrument (timeout frame-delay)])]
          (condp = c
            c-instrument (recur data)
            (do (draw-instrument draw-ctx instrument)
@@ -213,7 +214,7 @@
   (go
    (loop [instrument (update-size (create-instrument (scales/c-minor)) canvas-id)]
      (>! c-instrument instrument)
-     (let [[data c] (alts! [c-touch c-orientation-change (timeout 16)])]
+     (let [[data c] (alts! [c-touch c-orientation-change (timeout frame-delay)])]
        (condp = c
          c-orientation-change (recur (update-size instrument canvas-id))
          c-touch (recur (fire-touch-data-on-instrument instrument data))
