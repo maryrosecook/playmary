@@ -27,11 +27,6 @@
 (defn get-ctx [canvas-id]
   (.getContext (dom/getElement canvas-id) "2d"))
 
-(defn index-of
-  [coll item]
-  (find-first (fn [i] (= item (nth coll i)))
-              (-> coll count range)))
-
 (def keyword->event-type
   {:keyup goog.events.EventType.KEYUP
    :keydown goog.events.EventType.KEYDOWN
