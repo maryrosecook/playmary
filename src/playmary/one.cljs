@@ -185,14 +185,15 @@
         (assoc :notes (map (fn [n] (if (note-off? n) (assoc n :off playhead) n)) notes))
         (->> (reduce-val->> stop-piano-key (->> notes (filter note-off?) (map :freq)))))))
 
-(defn max-scroll-distance
+(defn distance
+  [t instrument]
+  (- (get-in instrument [:cur-touches (t :touch-id) :position :y])
+     (-> t :position :y)))
+
+(defn filter-scroll-touches
   [touches instrument]
-  (let [distances (map (fn [t]
-                         (- (get-in instrument [:cur-touches (t :touch-id) :position :y])
-                            (-> t :position :y)))
-                       (filter-type "touchmove" touches))]
-    (or (first (sort (fn [a b] (max (.abs js/Math a) (.abs js/Math b))) distances))
-        0)))
+  (filter (fn [t] (> (.abs js/Math (distance t instrument)) 10))
+          (filter-type "touchmove" touches)))
 
 (defn record-touches
   [touches instrument]
@@ -205,18 +206,18 @@
         (update-in [:cur-touches] (fn [c] (apply dissoc c (map :touch-id ends)))))))
 
 (defn scroll
-  [touches {playhead :playhead :as instrument}]
-  (let [delta-ms (/ (max-scroll-distance touches instrument)
-                    (instrument :px-per-ms))]
-    (if (> (.abs js/Math delta-ms) 20)
-      (-> instrument
-          (assoc :scrolling? true)
-          (assoc :playhead (+ playhead delta-ms)))
-      (assoc instrument :scrolling? false))))
+  [scroll-touches {playhead :playhead px-per-ms :px-per-ms :as instrument}]
+  (if-let [scroll-touch (first (sort (fn [a b] (max (.abs js/Math (distance a instrument))
+                                                    (.abs js/Math (distance b instrument))))
+                                     scroll-touches))]
+    (-> instrument
+        (assoc :scrolling? true)
+        (assoc :playhead (+ playhead (/ (distance scroll-touch instrument) px-per-ms))))
+    (assoc instrument :scrolling? false)))
 
 (defn delete-scrolled-notes
-  [touches {notes :notes :as instrument}]
-  (let [scroll-touch-ids (set (map :touch-id (filter-type "touchmove" touches)))
+  [scroll-touches {notes :notes :as instrument}]
+  (let [scroll-touch-ids (set (map :touch-id scroll-touches))
         delete-notes (group-by (fn [t] (and (nil? (t :off))
                                             (contains? scroll-touch-ids (t :touch-id))))
                                notes)]
@@ -226,10 +227,11 @@
 
 (defn handle-scrolling
   [touches instrument]
-  (->> instrument
-       (scroll touches)
-       (record-touches touches)
-       (delete-scrolled-notes touches)))
+  (let [scroll-touches (filter-scroll-touches touches instrument)]
+    (->> instrument
+         (scroll scroll-touches)
+         (delete-scrolled-notes scroll-touches)
+         (record-touches touches))))
 
 (defn fire-touch-data-on-instrument
   [instrument data]
