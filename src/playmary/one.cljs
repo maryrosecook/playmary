@@ -180,16 +180,10 @@
   (let [off-touch-ids (->> (filter-type "touchend" touches)
                            (map :touch-id)
                            set)
-        off-freqs (->> notes
-                       (filter (fn [n] (contains? off-touch-ids (n :touch-id))))
-                       (map :freq))]
+        note-off? (fn [n] (contains? off-touch-ids (n :touch-id)))]
     (-> instrument
-        (assoc :notes (map (fn [{touch-id :touch-id :as n}]
-                             (if (contains? off-touch-ids touch-id)
-                               (assoc n :off playhead)
-                               n))
-                           notes))
-        (->> (reduce-val->> stop-piano-key off-freqs)))))
+        (assoc :notes (map (fn [n] (if (note-off? n) (assoc n :off playhead) n)) notes))
+        (->> (reduce-val->> stop-piano-key (->> notes (filter note-off?) (map :freq)))))))
 
 (defn max-scroll-distance
   [touches instrument]
