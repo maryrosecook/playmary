@@ -173,7 +173,7 @@
   (let [new-notes (touches->notes instrument (filter-type "touchstart" touches))]
     (reduce play-piano-key
             (assoc instrument :notes (concat new-notes notes))
-            (map (fn [n] (n :freq)) new-notes))))
+            (map :freq new-notes))))
 
 (defn end-notes
   [touches {notes :notes playhead :playhead :as instrument}]
