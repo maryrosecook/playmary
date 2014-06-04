@@ -125,7 +125,7 @@
   [instrument freq]
   (if (get-in instrument [:piano-keys freq :on?])
     (do
-      (println "stop" (get-in instrument [:piano-keys freq :synth]))
+      (println "stop")
       (.release (get-in instrument [:piano-keys freq :synth]))
       (assoc-in instrument [:piano-keys freq :on?] false))
     instrument))
@@ -197,7 +197,8 @@
                          (- (get-in instrument [:cur-touches (t :touch-id) :position :y])
                             (-> t :position :y)))
                        (filter-type "touchmove" touches))]
-    (first (sort (fn [a b] (max (.abs js/Math a) (.abs js/Math b))) distances))))
+    (or (first (sort (fn [a b] (max (.abs js/Math a) (.abs js/Math b))) distances))
+        0)))
 
 (defn record-touches
   [touches instrument]
@@ -211,24 +212,23 @@
 
 (defn scroll
   [touches {playhead :playhead :as instrument}]
-  (if-let [scroll-distance (max-scroll-distance touches instrument)]
-    (let [delta-y (/ scroll-distance (instrument :px-per-ms))]
+  (let [delta-ms (/ (max-scroll-distance touches instrument)
+                    (instrument :px-per-ms))]
+    (if (> (.abs js/Math delta-ms) 20)
       (-> instrument
           (assoc :scrolling? true)
-          (assoc :playhead (+ playhead delta-y))))
-    (assoc instrument :scrolling? false)))
+          (assoc :playhead (+ playhead delta-ms)))
+      (assoc instrument :scrolling? false))))
 
 (defn delete-scrolled-notes
   [touches {notes :notes :as instrument}]
-  (let [touchmoves (filter-type "touchmove" touches)
-        scroll-touch-ids (set (map :touch-id touchmoves))
-        scroll-touch-freqs (map (partial touch->freq instrument) touchmoves)]
+  (let [scroll-touch-ids (set (map :touch-id (filter-type "touchmove" touches)))
+        delete-notes (group-by (fn [t] (and (nil? (t :off))
+                                            (contains? scroll-touch-ids (t :touch-id))))
+                               notes)]
     (-> instrument
-        (assoc :notes (remove (fn [t]
-                                (and (nil? (t :off))
-                                     (contains? scroll-touch-ids (t :touch-id))))
-                              notes))
-        (->> (reduce-val->> stop-piano-key scroll-touch-freqs)))))
+        (assoc :notes (get delete-notes false))
+        (->> (reduce-val->> stop-piano-key (map :freq (get delete-notes true)))))))
 
 (defn handle-scrolling
   [touches instrument]
