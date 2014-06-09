@@ -16,6 +16,10 @@
              {:note "#000000" :light "#E18C43" :dark "#999999"}
              {:note "#393939" :light "#E1B040" :dark "#B9B9B9"}])
 
+(defn prevent-scrolling
+  []
+  (set! (.-ontouchmove js/document) (fn [e] (.preventDefault e))))
+
 (defn piano-key-width
   [{piano-keys :piano-keys w :w}]
   (.round js/Math (/ w (count piano-keys))))
@@ -260,6 +264,8 @@
     (assoc instrument :playhead (+ (instrument :playhead) delta))
     instrument))
 
+
+(prevent-scrolling)
 (let [canvas-id "canvas"
       c-instrument (chan (sliding-buffer 1))
       c-orientation-change (util/listen js/window :orientation-change)
