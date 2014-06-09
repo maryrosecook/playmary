@@ -20,6 +20,14 @@
   []
   (set! (.-ontouchmove js/document) (fn [e] (.preventDefault e))))
 
+(defn set-up-web-audio-on-first-touch
+  []
+  (set! (.-ontouchstart js/document)
+        (fn []
+          (-> "sin" timbre .play .pause)
+          (set! (.-ontouchstart js/document) nil))))
+
+
 (defn piano-key-width
   [{piano-keys :piano-keys w :w}]
   (.round js/Math (/ w (count piano-keys))))
@@ -266,6 +274,8 @@
 
 
 (prevent-scrolling)
+(set-up-web-audio-on-first-touch)
+
 (let [canvas-id "canvas"
       c-instrument (chan (sliding-buffer 1))
       c-orientation-change (util/listen js/window :orientation-change)
