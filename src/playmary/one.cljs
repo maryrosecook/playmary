@@ -196,11 +196,18 @@
     (-> instrument
         (assoc :notes (map (fn [n] (if (note-off? n) (assoc n :off playhead) n)) notes))
         (->> (reduce-val->> stop-piano-key (->> notes (filter note-off?) (map :freq)))))))
+(defn x-distance
+  [{{end-x :x} :position :as t} instrument]
+  (- (get-in instrument [:cur-touches (t :touch-id) :position :x]) end-x))
+
+(defn y-distance
+  [{{end-y :y} :position :as t} instrument]
+  (- (get-in instrument [:cur-touches (t :touch-id) :position :y]) end-y))
 
 (defn distance
   [t instrument]
-  (- (get-in instrument [:cur-touches (t :touch-id) :position :y])
-     (-> t :position :y)))
+  (.sqrt js/Math (+ (.pow js/Math (x-distance t instrument) 2)
+                    (.pow js/Math (y-distance t instrument) 2))))
 
 (defn filter-scroll-touches
   [touches instrument]
@@ -219,12 +226,12 @@
 
 (defn scroll
   [scroll-touches {playhead :playhead px-per-ms :px-per-ms :as instrument}]
-  (if-let [scroll-touch (first (sort (fn [a b] (max (.abs js/Math (distance a instrument))
-                                                    (.abs js/Math (distance b instrument))))
+  (if-let [scroll-touch (first (sort (fn [a b] (max (.abs js/Math (y-distance a instrument))
+                                                    (.abs js/Math (y-distance b instrument))))
                                      scroll-touches))]
     (-> instrument
         (assoc :scrolling? true)
-        (assoc :playhead (+ playhead (/ (distance scroll-touch instrument) px-per-ms))))
+        (assoc :playhead (+ playhead (/ (y-distance scroll-touch instrument) px-per-ms))))
     (assoc instrument :scrolling? false)))
 
 (defn delete-scrolled-notes
