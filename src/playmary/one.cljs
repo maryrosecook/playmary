@@ -114,7 +114,7 @@
                                                  scale))
      :notes ()
      :w 0 :h 0 :sound-ready false
-     :px-per-ms 0.04
+     :px-per-ms 0.1
      :cur-touches {}
      :scrolling? false
      :start start
