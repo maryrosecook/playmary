@@ -197,6 +197,7 @@
     (-> instrument
         (assoc :notes (map (fn [n] (if (note-off? n) (assoc n :off playhead) n)) notes))
         (->> (reduce-val->> stop-piano-key (->> notes (filter note-off?) (map :freq)))))))
+
 (defn x-distance
   [{{end-x :x} :position :as t} instrument]
   (- (get-in instrument [:cur-touches (t :touch-id) :position :x]) end-x))
