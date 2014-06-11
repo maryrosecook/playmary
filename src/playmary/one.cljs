@@ -2,7 +2,8 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [goog.dom :as dom]
             [goog.events :as events]
-            [cljs.core.async :as async :refer [<! put! chan timeout sliding-buffer close!]]
+            [cljs.core.async :as async :refer [<! >! put! chan timeout sliding-buffer close!
+                                               map<]]
             [playmary.util :as util]
             [playmary.scales :as scales]))
 
@@ -252,14 +253,13 @@
          (delete-scrolled-notes scroll-touches)
          (record-touches touches))))
 
-(defn fire-touch-data-on-instrument
-  [instrument data]
-  (let [touches (touch-data->touches data)]
-    (->> instrument
-         maybe-init-synths
-         (start-notes touches)
-         (end-notes touches)
-         (handle-scrolling touches))))
+(defn fire-touches-on-instrument
+  [instrument touches]
+  (->> instrument
+       maybe-init-synths
+       (start-notes touches)
+       (end-notes touches)
+       (handle-scrolling touches)))
 
 (defn update-size [instrument canvas-id]
   (let [{w :w h :h :as window-size} (util/get-window-size)]
@@ -273,9 +273,9 @@
 
 (defn create-touch-input-channel
   [canvas-id]
-  (async/merge [(util/listen (dom/getElement canvas-id) :touchstart)
-                (util/listen (dom/getElement canvas-id) :touchend)
-                (util/listen (dom/getElement canvas-id) :touchmove)]))
+  (async/merge [(touches canvas-id :touchstart)
+                (touches canvas-id :touchend)
+                (touches canvas-id :touchmove)]))
 
 (defn step-time
   [instrument delta]
@@ -313,5 +313,5 @@
      (let [[data c] (alts! [c-touch c-orientation-change (timeout frame-delay)])]
        (condp = c
          c-orientation-change (recur (update-size instrument canvas-id))
-         c-touch (recur (fire-touch-data-on-instrument instrument data))
+         c-touch (recur (fire-touches-on-instrument instrument data))
          (recur (tick instrument frame-delay)))))))
