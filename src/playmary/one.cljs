@@ -279,6 +279,9 @@
     (assoc instrument :playhead (+ (instrument :playhead) delta))
     instrument))
 
+(defn tick
+  [instrument delta]
+  (step-time instrument delta))
 
 (prevent-scrolling)
 (set-up-web-audio-on-first-touch)
@@ -307,4 +310,4 @@
        (condp = c
          c-orientation-change (recur (update-size instrument canvas-id))
          c-touch (recur (fire-touch-data-on-instrument instrument data))
-         (recur (step-time instrument frame-delay)))))))
+         (recur (tick instrument frame-delay)))))))
