@@ -235,7 +235,7 @@
          (or (= (prev-t :type) "touchmove")
              (and (= (prev-t :type) "touchstart")
                   (= (prev-t :age) 0)
-                  (> (distance (cur-t :position) (prev-t :position)) 5))))))
+                  (> (distance (cur-t :position) (prev-t :position)) 10))))))
 
 (defmulti handle-touch (fn [t touches out-c] (:type t)))
 
