@@ -228,8 +228,8 @@
   (mapcat< touch-data->touches (util/listen (dom/getElement canvas-id) type)))
 
 (defn scroll?
-  [scroll-states cur-t]
-  (let [prev-t (get scroll-states (cur-t :touch-id))]
+  [touches cur-t]
+  (let [prev-t (get touches (cur-t :touch-id))]
     (and prev-t
          (= (cur-t :type) "touchmove")
          (or (= (prev-t :type) "touchmove")
@@ -237,37 +237,37 @@
                   (= (prev-t :age) 0)
                   (> (distance (cur-t :position) (prev-t :position)) 5))))))
 
-(defmulti handle-touch (fn [t touch-state out-c] (:type t)))
+(defmulti handle-touch (fn [t touches out-c] (:type t)))
 
 (defmethod handle-touch "touchstart"
-  [{touch-id :touch-id :as t} state out-c]
-  (assoc state touch-id t))
+  [{touch-id :touch-id :as t} touches out-c]
+  (assoc touches touch-id t))
 
 (defmethod handle-touch "touchmove"
-  [{touch-id :touch-id :as t} state out-c]
-  (if (scroll? state t)
-    (let [{{x1 :x y1 :y} :position} (get state touch-id)
+  [{touch-id :touch-id :as t} touches out-c]
+  (if (scroll? touches t)
+    (let [{{x1 :x y1 :y} :position} (get touches touch-id)
           {{x2 :x y2 :y} :position} t]
-      (assoc state touch-id
+      (assoc touches touch-id
              (-> t (assoc :x-distance (- x1 x2)) (assoc :y-distance (- y1 y2)))))
-    (dissoc state touch-id)))
+    (dissoc touches touch-id)))
 
 (defmethod handle-touch "touchend"
-  [{touch-id :touch-id :as t} state out-c]
-  (assoc state touch-id t))
+  [{touch-id :touch-id :as t} touches out-c]
+  (assoc touches touch-id t))
 
 (defn emit-touch?
-  [{t-type :type t-age :age} state]
+  [{t-type :type t-age :age} touches]
   (or (and (or (= t-type "touchstart") (= t-type "touchend"))
            (> t-age 0))
       (= t-type "touchmove")))
 
 (defn touch-tick
-  [state out-c]
-  (let [{emit true keep false} (group-by emit-touch? (vals state))]
-    (onto-chan out-c (or (vals (select-keys state (map :touch-id emit))) '()) false)
+  [touches out-c]
+  (let [{emit true keep false} (group-by emit-touch? (vals touches))]
+    (onto-chan out-c (or (vals (select-keys touches (map :touch-id emit))) '()) false)
     (reduce (fn [m k] (update-in m [k :age] inc))
-            (select-keys state (map :touch-id keep))
+            (select-keys touches (map :touch-id keep))
             (map :touch-id keep))))
 
 (defn touch-chan
@@ -276,11 +276,11 @@
         c-touchstart (touches canvas-id :touchstart)
         c-touchmove (touches canvas-id :touchmove)
         c-touchend (touches canvas-id :touchend)]
-    (go (loop [state {}]
+    (go (loop [touches {}]
           (let [[v _] (alts! [c-touchstart c-touchmove c-touchend (timeout wait)])]
             (if (nil? v)
-              (recur (touch-tick state out-c))
-              (recur (handle-touch v state out-c))))))
+              (recur (touch-tick touches out-c))
+              (recur (handle-touch v touches out-c))))))
     out-c))
 
 (defn step-time
