@@ -250,7 +250,7 @@
           {{x2 :x y2 :y} :position} t]
       (assoc touches touch-id
              (-> t (assoc :x-distance (- x1 x2)) (assoc :y-distance (- y1 y2)))))
-    (dissoc touches touch-id)))
+    touches))
 
 (defmethod handle-touch "touchend"
   [{touch-id :touch-id :as t} touches out-c]
