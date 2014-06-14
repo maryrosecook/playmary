@@ -28,7 +28,6 @@
           (-> "sin" timbre .play .pause)
           (set! (.-ontouchstart js/document) nil))))
 
-
 (defn piano-key-width
   [{piano-keys :piano-keys w :w}]
   (.round js/Math (/ w (count piano-keys))))
@@ -114,10 +113,10 @@
     {:piano-keys (into (sorted-map) (map-indexed (fn [i freq] [freq {:n i :on? false}])
                                                  scale))
      :notes ()
-     :w 0 :h 0 :sound-ready false
+     :w 0 :h 0
+     :sound-ready false
      :px-per-ms 0.1
-     ;; :cur-touches {}
-     :scrolling? false
+     :scrolling-touch-id nil
      :start start
      :playhead start}))
 
@@ -163,10 +162,6 @@
     instrument
     (add-synths-to-instrument instrument)))
 
-(defn filter-type
-  [type touches]
-  (filter (fn [t] (= (t :type) type)) touches))
-
 (defn reduce-val->>
   [f coll val]
   (reduce f val coll))
@@ -196,65 +191,30 @@
         (assoc :notes (map (fn [n] (if (note-off? n) (assoc n :off playhead) n)) notes))
         (->> (reduce-val->> stop-piano-key (->> notes (filter note-off?) (map :freq)))))))
 
-;; (defn x-distance
-;;   [{{end-x :x} :position :as t} instrument]
-;;   (- (get-in instrument [:cur-touches (t :touch-id) :position :x]) end-x))
-
-;; (defn y-distance
-;;   [{{end-y :y} :position :as t} instrument]
-;;   (- (get-in instrument [:cur-touches (t :touch-id) :position :y]) end-y))
-
 (defn distance
   [{x1 :x y1 :y} {x2 :x y2 :y}]
   (.sqrt js/Math (+ (.pow js/Math (- x2 x1) 2) (.pow js/Math (- y2 y1) 2))))
 
-;; (defn filter-scroll-touches
-;;   [touches instrument]
-;;   (filter (fn [t] (> (.abs js/Math (distance t instrument)) 10))
-;;           (filter-type "touchmove" touches)))
-
-;; (defn record-touches
-;;   [touches instrument]
-;;   (let [starts (filter-type "touchstart" touches)
-;;         moves (filter-type "touchmove" touches)
-;;         ends (filter-type "touchend" touches)]
-;;     (-> instrument
-;;         (update-in [:cur-touches] into (map vector (map :touch-id starts) starts))
-;;         (update-in [:cur-touches] into (map vector (map :touch-id moves) moves))
-;;         (update-in [:cur-touches] (fn [c] (apply dissoc c (map :touch-id ends)))))))
-
 (defn scroll
   [touch {playhead :playhead px-per-ms :px-per-ms :as instrument}]
-  ;; #_(-> instrument
-  ;;     ;; (assoc :scrolling? true)
-  ;;   (assoc :playhead (+ playhead (/ (touch :y-distance) px-per-ms))))
-  ;; (assoc instrument :scrolling? false)
-  (assoc instrument :playhead (+ playhead (/ (touch :y-distance) px-per-ms))))
+  (-> instrument
+      (assoc :scroll-touch-id (touch :touch-id))
+      (assoc :playhead (+ playhead (/ (touch :y-distance) px-per-ms)))))
 
-;; (defn delete-scrolled-notes
-;;   [scroll-touches {notes :notes :as instrument}]
-;;   (let [scroll-touch-ids (set (map :touch-id scroll-touches))
-;;         delete-notes (group-by (fn [t] (and (nil? (t :off))
-;;                                             (contains? scroll-touch-ids (t :touch-id))))
-;;                                notes)]
-;;     (-> instrument
-;;         (assoc :notes (get delete-notes false))
-;;         (->> (reduce-val->> stop-piano-key (map :freq (get delete-notes true)))))))
-
-;; (defn handle-scrolling
-;;   [touches instrument]
-;;   (let [scroll-touches (filter-scroll-touches touches instrument)]
-;;     (->> instrument
-;;          (scroll scroll-touches)
-;;          (delete-scrolled-notes scroll-touches)
-;;          (record-touches touches))))
+(defn stop-scroll
+  [touch instrument]
+  (if (= (touch :touch-id) (instrument :scroll-touch-id))
+    (assoc instrument :scroll-touch-id nil)
+    instrument))
 
 (defn fire-touch-on-instrument
   [touch instrument]
   (condp = (touch :type)
     "touchstart" (start-note touch instrument)
     "touchmove" (scroll touch instrument)
-    "touchend" (end-notes touch instrument)))
+    "touchend" (->> instrument
+                    (end-notes touch)
+                    (stop-scroll touch))))
 
 (defn update-size [instrument canvas-id]
   (let [{w :w h :h :as window-size} (util/get-window-size)]
@@ -265,12 +225,6 @@
 (defn touches
   [canvas-id type]
   (mapcat< touch-data->touches (util/listen (dom/getElement canvas-id) type)))
-
-;; (defn create-touch-input-channel
-;;   [canvas-id]
-;;   (async/merge [(touches canvas-id :touchstart)
-;;                 (touches canvas-id :touchend)
-;;                 (touches canvas-id :touchmove)]))
 
 (defn scroll?
   [scroll-state cur-t]
@@ -349,14 +303,9 @@
               (recur (handle-touch v touch-state))))))
     out-c))
 
-;; (defn scroll-touches-chan
-;;   [canvas-id]
-;;   (touches canvas-id :touchmove))
-
-
 (defn step-time
   [instrument delta]
-  (if (not (instrument :scrolling?))
+  (if (not (instrument :scroll-touch-id))
     (assoc instrument :playhead (+ (instrument :playhead) delta))
     instrument))
 
