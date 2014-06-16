@@ -116,6 +116,7 @@
                                                  scale))
      :notes ()
      :w 0 :h 0
+     :sound-on? true
      :px-per-ms 0.1
      :scroll-touch-id nil
      :start start
@@ -129,16 +130,18 @@
 
 (defn play-piano-key
   [instrument freq]
-  (println "play")
-  (.play (.bang (get-in instrument [:piano-keys freq :synth])))
+  (if (instrument :sound-on?)
+    (.play (.bang (get-in instrument [:piano-keys freq :synth])))
+    (println "play"))
   (assoc-in instrument [:piano-keys freq :on?] true))
 
 (defn stop-piano-key
   [instrument freq]
   (if (get-in instrument [:piano-keys freq :on?])
     (do
-      (println "stop")
-      (.release (get-in instrument [:piano-keys freq :synth]))
+      (if (instrument :sound-on?)
+        (.release (get-in instrument [:piano-keys freq :synth]))
+        (println "stop"))
       (assoc-in instrument [:piano-keys freq :on?] false))
     instrument))
 
