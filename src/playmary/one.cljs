@@ -59,9 +59,7 @@
 
 (defn colliding?
   [r1 r2]
-  (not (or (< (+ (:x r1) (:w r1)) (:x r2))
-           (< (+ (:y r1) (:h r1)) (:y r2))
-           (> (:x r1) (+ (:x r2) (:w r2)))
+  (not (or (< (+ (:y r1) (:h r1)) (:y r2))
            (> (:y r1) (+ (:y r2) (:h r2))))))
 
 (defn on-screen?
