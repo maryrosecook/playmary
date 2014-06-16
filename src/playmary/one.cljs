@@ -114,7 +114,7 @@
      :w 0 :h 0
      :sound-ready false
      :px-per-ms 0.1
-     :scrolling-touch-id nil
+     :scroll-touch-id nil
      :start start
      :playhead start}))
 
