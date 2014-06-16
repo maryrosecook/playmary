@@ -105,6 +105,10 @@
           (js-obj "a" 5 "d" 10000 "s" 0 "r" 500)
           (timbre "fami" (js-obj "freq" freq "mul" 0.1))))
 
+(defn sound-ready?
+  [instrument]
+  (not (nil? (-> instrument :piano-keys first second :synth))))
+
 (defn create-instrument
   [scale]
   (let [start (.getTime (js/Date.))]
@@ -112,7 +116,6 @@
                                                  scale))
      :notes ()
      :w 0 :h 0
-     :sound-ready false
      :px-per-ms 0.1
      :scroll-touch-id nil
      :start start
@@ -120,10 +123,9 @@
 
 (defn add-synths-to-instrument
   [instrument]
-  (assoc (reduce (fn [a x] (assoc-in a [:piano-keys x :synth] (create-note-synth x)))
-                 instrument
-                 (-> instrument :piano-keys keys))
-    :sound-ready true))
+  (reduce (fn [a x] (assoc-in a [:piano-keys x :synth] (create-note-synth x)))
+          instrument
+          (-> instrument :piano-keys keys)))
 
 (defn play-piano-key
   [instrument freq]
@@ -157,7 +159,7 @@
 
 (defn maybe-init-synths
   [instrument]
-  (if (:sound-ready instrument)
+  (if (sound-ready? instrument)
     instrument
     (add-synths-to-instrument instrument)))
 
