@@ -249,7 +249,6 @@
      (let [{{x1 :x y1 :y} :position} (get touches touch-id)
            {{x2 :x y2 :y} :position} t
            scroll (-> t (assoc :x-distance (- x1 x2)) (assoc :y-distance (- y1 y2)))]
-       (println scroll)
        (>! out-c scroll)
        (assoc touches touch-id scroll))
      touches)))
