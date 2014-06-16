@@ -9,13 +9,13 @@
 
 (def timbre js/T)
 
-(def colors [{:note "#676767" :light "#6DA0CB" :dark "#000000"}
-             {:note "#929292" :light "#A76AB9" :dark "#1E1E1E"}
-             {:note "#B9B9B9" :light "#BB67A2" :dark "#3D3D3D"}
-             {:note "#DCDCDC" :light "#C55D83" :dark "#5C5C5C"}
-             {:note "#FFFFFF" :light "#D35E4C" :dark "#7A7A7A"}
-             {:note "#000000" :light "#E18C43" :dark "#999999"}
-             {:note "#393939" :light "#E1B040" :dark "#B9B9B9"}])
+(def colors [{:light "#6DA0CB" :dark "#000000"}
+             {:light "#A76AB9" :dark "#1E1E1E"}
+             {:light "#BB67A2" :dark "#3D3D3D"}
+             {:light "#C55D83" :dark "#5C5C5C"}
+             {:light "#D35E4C" :dark "#7A7A7A"}
+             {:light "#E18C43" :dark "#999999"}
+             {:light "#E1B040" :dark "#B9B9B9"}])
 
 (defn prevent-scrolling
   []
