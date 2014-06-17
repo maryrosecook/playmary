@@ -2,8 +2,8 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [goog.dom :as dom]
             [goog.events :as events]
-            [cljs.core.async :as async :refer [<! >! put! chan timeout sliding-buffer close!
-                                               mapcat< onto-chan closed?]]
+            [cljs.core.async :as async :refer [<! >! chan timeout sliding-buffer mapcat<
+                                               onto-chan]]
             [playmary.util :as util]
             [playmary.scales :as scales]))
 
