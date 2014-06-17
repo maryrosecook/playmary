@@ -51,10 +51,19 @@
   [{w :w h :h playhead :playhead :as instrument}]
   {:x 0 :y (t->px instrument playhead) :w w :h h})
 
+(defn finger-pushing?
+  [instrument]
+  (not (nil? (-> instrument :scroll :touch-id))))
+
+(defn scrolling?
+  [instrument]
+  (or (finger-pushing? instrument)
+      (not= (-> instrument :scroll :speed) 0)))
+
 (defn draw-note
   [draw-ctx instrument note]
   (let [{x :x y :y w :w h :h} (note-rect note instrument)]
-    (set! (.-fillStyle draw-ctx) "white")
+    (set! (.-fillStyle draw-ctx) "#FFFFFF")
     (.fillRect draw-ctx x y w h)))
 
 (defn colliding?
@@ -118,7 +127,7 @@
      :w 0 :h 0
      :sound-on? true
      :px-per-ms 0.1
-     :scroll {:distance 0 :speed 0 :friction 0.9 :touch-id nil}
+     :scroll {:speed 0 :friction 0.75 :touch-id nil}
      :start start
      :playhead start}))
 
@@ -179,15 +188,6 @@
        :off nil
        :touch-id (touch :touch-id)})))
 
-(defn finger-pushing?
-  [instrument]
-  (not (nil? (-> instrument :scroll :touch-id))))
-
-(defn scrolling?
-  [instrument]
-  (or (finger-pushing? instrument)
-      (not= (-> instrument :scroll :speed) 0)))
-
 (defn start-note
   [touch {notes :notes :as instrument}]
   (if-let [new-note (touch->note instrument touch)]
@@ -209,31 +209,32 @@
   (.sqrt js/Math (+ (.pow js/Math (- x2 x1) 2) (.pow js/Math (- y2 y1) 2))))
 
 (defn finger-push
-  [{touch-id :touch-id touch-y-distance :y-distance} instrument]
-  (-> instrument
-      (assoc-in [:scroll :distance] touch-y-distance)
-      (assoc-in [:scroll :touch-id] touch-id)))
+  [{touch-id :touch-id touch-y-distance :y-distance} {playhead :playhead :as instrument}]
+  (let [speed (/ touch-y-distance (instrument :px-per-ms))]
+    (-> instrument
+        (assoc-in [:scroll :speed] speed)
+        (assoc-in [:scroll :touch-id] touch-id)
+        (assoc :playhead (+ playhead speed)))))
 
 (defn stop-finger-push
   [{touch-y-distance :y-distance} instrument]
-  (-> instrument
-      (assoc-in [:scroll :distance] 0)
-      (assoc-in [:scroll :touch-id] nil)))
+  (assoc-in instrument [:scroll :touch-id] nil))
 
 (defn stop-scroll
   [touch instrument]
   (assoc-in instrument [:scroll :speed] 0))
 
-(defn scroll
-  [{{distance :distance speed :speed friction :friction} :scroll
-    playhead :playhead :as instrument}
+(defn inertial-scroll
+  [{{speed :speed friction :friction} :scroll
+    playhead :playhead px-per-ms :px-per-ms :as instrument}
    delta]
-  (let [pre-zeno-speed (* (+ speed distance)
-                          (if (finger-pushing? instrument) 1 friction))
-        speed (if (< (.abs js/Math pre-zeno-speed) 1) 0 pre-zeno-speed)]
-    (-> instrument
-        (assoc :playhead (+ playhead speed))
-        (assoc-in [:scroll :speed] speed))))
+  (if (not (finger-pushing? instrument))
+    (let [pre-zeno-speed (* speed friction)
+          speed (if (< (.abs js/Math pre-zeno-speed) 1) 0 pre-zeno-speed)]
+      (-> instrument
+          (assoc :playhead (+ playhead speed))
+          (assoc-in [:scroll :speed] speed)))
+    instrument))
 
 (defn fire-touch-hold-on-instrument
   [touch instrument]
@@ -330,7 +331,7 @@
   [instrument delta]
   (-> instrument
       (step-time delta)
-      (scroll delta)))
+      (inertial-scroll delta)))
 
 (prevent-scrolling)
 (set-up-web-audio-on-first-touch)
