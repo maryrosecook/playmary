@@ -296,7 +296,7 @@
 (defn emit-touch?
   [{t-type :type t-age :age} touches]
   (and (or (= t-type "touchstart") (= t-type "touchend"))
-       (> t-age 1)))
+       (> t-age 0)))
 
 (defn touch-tick
   [touches out-c]
