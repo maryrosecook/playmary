@@ -17,7 +17,7 @@
              {:light "#A76AB9" :dark "#1E1E1E"}
              {:light "#6DA0CB" :dark "#000000"}])
 
-(defn prevent-scrolling
+(defn prevent-web-view-scrolling
   []
   (set! (.-ontouchmove js/document) (fn [e] (.preventDefault e))))
 
@@ -333,7 +333,7 @@
       (step-time delta)
       (inertial-scroll delta)))
 
-(prevent-scrolling)
+(prevent-web-view-scrolling)
 (set-up-web-audio-on-first-touch)
 
 (let [canvas-id "canvas"
