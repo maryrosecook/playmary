@@ -2,7 +2,7 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [goog.dom :as dom]
             [goog.events :as events]
-            [cljs.core.async :as async :refer [<! >! chan timeout sliding-buffer mapcat<
+            [cljs.core.async :as async :refer [<! >! chan timeout sliding-buffer map<
                                                onto-chan]]
             [playmary.util :as util]
             [playmary.scales :as scales]))
@@ -259,7 +259,7 @@
 
 (defn touches
   [canvas-id type]
-  (mapcat< touch-data->touches (util/listen (dom/getElement canvas-id) type)))
+  (map< touch-data->touches (util/listen (dom/getElement canvas-id) type)))
 
 (defn scrolling-touch?
   [touches cur-t]
@@ -271,28 +271,32 @@
                   (> (.abs js/Math (- (-> prev-t :position :y) (-> cur-t :position :y)))
                      10))))))
 
-(defmulti handle-touch (fn [t touches out-c] (:type t)))
+(defmulti handle-touches (fn [new-touches cur-touches out-c] (-> new-touches first :type)))
 
-(defmethod handle-touch "touchstart"
-  [{touch-id :touch-id :as t} touches out-c]
+(defmethod handle-touches "touchstart"
+  [new-touches cur-touches _]
   (go
-   (assoc touches touch-id t)))
+   (merge cur-touches (zipmap (map :touch-id new-touches) new-touches))))
 
-(defmethod handle-touch "touchmove"
-  [{touch-id :touch-id :as t} touches out-c]
+(defmethod handle-touches "touchmove"
+  [new-touches cur-touches out-c]
   (go
-   (if (scrolling-touch? touches t)
-     (let [{{x1 :x y1 :y} :position} (get touches touch-id)
-           {{x2 :x y2 :y} :position} t
-           scroll (-> t (assoc :x-distance (- x1 x2)) (assoc :y-distance (- y1 y2)))]
-       (>! out-c scroll)
-       (assoc touches touch-id scroll))
-     touches)))
+   (if-let [scroll (->> new-touches
+                        (filter (partial scrolling-touch? cur-touches))
+                        (map (fn [{touch-id :touch-id :as t}]
+                               (assoc t :y-distance
+                                      (- (get-in cur-touches [touch-id :position :y])
+                                         (get-in t [:position :y])))))
+                        (sort-by :y-distance >)
+                        first)]
+     (do (>! out-c scroll)
+         (assoc cur-touches (scroll :touch-id) scroll))
+     cur-touches)))
 
-(defmethod handle-touch "touchend"
-  [{touch-id :touch-id :as t} touches out-c]
+(defmethod handle-touches "touchend"
+  [new-touches cur-touches _]
   (go
-   (assoc touches touch-id t)))
+   (merge cur-touches (zipmap (map :touch-id new-touches) new-touches))))
 
 (defn emit-touch?
   [{t-type :type t-ticks :ticks} touches]
@@ -318,7 +322,7 @@
           (let [[v _] (alts! [c-touchstart c-touchmove c-touchend (timeout wait)])]
             (if (nil? v)
               (recur (<! (touch-tick touches out-c)))
-              (recur (<! (handle-touch v touches out-c)))))))
+              (recur (<! (handle-touches v touches out-c)))))))
     out-c))
 
 (defn step-time
