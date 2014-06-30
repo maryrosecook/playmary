@@ -159,7 +159,7 @@
         touches (js->clj (.-changedTouches event) :keywordize-keys true)]
     (map (fn [x] {:type (.-type event)
                   :touch-id (:identifier x)
-                  :age 0 ;; ticks
+                  :ticks 0
                   :position {:x (:clientX x) :y (:clientY x)}
                   :time (.-timeStamp event)})
          (for [x (range (:length touches))] ((keyword (str x)) touches)))))
@@ -295,16 +295,16 @@
    (assoc touches touch-id t)))
 
 (defn emit-touch?
-  [{t-type :type t-age :age} touches]
+  [{t-type :type t-ticks :ticks} touches]
   (and (or (= t-type "touchstart") (= t-type "touchend"))
-       (> t-age 0)))
+       (> t-ticks 0)))
 
 (defn touch-tick
   [touches out-c]
   (let [{emit true keep false} (group-by emit-touch? (vals touches))]
     (go
      (onto-chan out-c (or (vals (select-keys touches (map :touch-id emit))) '()) false)
-     (reduce (fn [m k] (update-in m [k :age] inc))
+     (reduce (fn [m k] (update-in m [k :ticks] inc))
              (select-keys touches (map :touch-id keep))
              (map :touch-id keep)))))
 
