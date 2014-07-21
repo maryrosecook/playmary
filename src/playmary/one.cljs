@@ -126,7 +126,7 @@
      :notes ()
      :w 0 :h 0
      :sound-on? true
-     :px-per-ms 0.1
+     :px-per-ms 0.3
      :scroll {:speed 0 :friction 0.75 :touch-id nil}
      :start start
      :playhead start}))
