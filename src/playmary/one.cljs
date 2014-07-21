@@ -13,9 +13,9 @@
              {:light "#E18C43" :dark "#999999"}
              {:light "#D35E4C" :dark "#7A7A7A"}
              {:light "#C55D83" :dark "#5C5C5C"}
-             {:light "#BB67A2" :dark "#3D3D3D"}
-             {:light "#A76AB9" :dark "#1E1E1E"}
-             {:light "#6DA0CB" :dark "#000000"}])
+             {:light "#BB67A2" :dark "#3F3F3F"}
+             {:light "#A76AB9" :dark "#272727"}
+             {:light "#796DCB" :dark "#000000"}])
 
 (defn prevent-web-view-scrolling
   []
